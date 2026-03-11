@@ -1,0 +1,2265 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guild Box Distributor — RO:X</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0b0e15;
+            --bg2: #111622;
+            --bg3: #17202e;
+            --border: #2a3550;
+            --gold: #c9a227;
+            --gold-light: #e8c84a;
+            --gold-dim: #7a6018;
+            --crimson: #8b1e1e;
+            --crimson-bright: #c0392b;
+            --text: #d8cdb8;
+            --text-dim: #8a8070;
+            --text-bright: #f0e6cc;
+            --dps-color: #e05252;
+            --support-color: #52a0e0;
+            --tank-color: #52c87a;
+            --shadow: 0 4px 24px rgba(0, 0, 0, 0.6);
+        }
+
+        /* LIGHT THEME */
+        html.light {
+            --bg: #f5f4f0;
+            --bg2: #ffffff;
+            --bg3: #f0ede8;
+            --border: #d8d0c4;
+            --gold: #8a6b10;
+            --gold-light: #6b5010;
+            --gold-dim: #b89840;
+            --crimson: #c0392b;
+            --crimson-bright: #e74c3c;
+            --text: #2c2620;
+            --text-dim: #7a7060;
+            --text-bright: #1a1510;
+            --dps-color: #c0392b;
+            --support-color: #2471a3;
+            --tank-color: #1e8449;
+            --shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        html.light body {
+            background-image:
+                radial-gradient(ellipse at 20% 10%, rgba(180, 150, 60, 0.06) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 90%, rgba(180, 80, 60, 0.04) 0%, transparent 60%);
+        }
+
+        html.light header::after {
+            background: linear-gradient(90deg, transparent, var(--gold-dim), var(--gold), var(--gold-dim), transparent);
+        }
+
+        html.light .header-title {
+            text-shadow: none;
+        }
+
+        html.light .btn-gold {
+            color: #fff;
+        }
+
+        html.light input[type=text],
+        html.light input[type=number],
+        html.light select {
+            background: var(--bg3);
+        }
+
+        html.light tr:hover td {
+            background: rgba(139, 107, 16, 0.05);
+        }
+
+        /* THEME TOGGLE BUTTON */
+        .theme-toggle {
+            position: absolute;
+            top: 18px;
+            right: 20px;
+            background: var(--bg3);
+            border: 1px solid var(--border);
+            color: var(--text-dim);
+            font-size: 0.75rem;
+            font-family: 'Cinzel', serif;
+            letter-spacing: 0.05em;
+            padding: 6px 14px;
+            cursor: pointer;
+            transition: all 0.25s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .theme-toggle:hover {
+            border-color: var(--gold-dim);
+            color: var(--text-bright);
+        }
+
+        .theme-toggle .toggle-icon {
+            font-size: 1rem;
+            transition: transform 0.4s;
+        }
+
+        html.light .theme-toggle .toggle-icon {
+            transform: rotate(180deg);
+        }
+
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            font-size: 15px;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Crimson Pro', Georgia, serif;
+            min-height: 100vh;
+            background-image:
+                radial-gradient(ellipse at 20% 10%, rgba(201, 162, 39, 0.04) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 90%, rgba(139, 30, 30, 0.06) 0%, transparent 60%);
+        }
+
+        /* HEADER */
+        header {
+            text-align: center;
+            padding: 24px 20px 0;
+            position: relative;
+        }
+
+        header::after {
+            content: '';
+            display: block;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--gold-dim), var(--gold), var(--gold-dim), transparent);
+            margin-top: 18px;
+        }
+
+        .header-title {
+            font-family: 'Cinzel', serif;
+            font-size: 1.9rem;
+            font-weight: 700;
+            color: var(--gold-light);
+            letter-spacing: 0.06em;
+            text-shadow: 0 0 30px rgba(201, 162, 39, 0.4);
+        }
+
+        .header-sub {
+            font-size: 0.95rem;
+            color: var(--text-dim);
+            margin-top: 4px;
+            letter-spacing: 0.04em;
+            font-style: italic;
+        }
+
+        #guildNameDisplay {
+            color: var(--gold);
+            font-family: 'Cinzel', serif;
+            font-size: 1rem;
+        }
+
+        /* TABS */
+        .tabs {
+            display: flex;
+            gap: 2px;
+            padding: 18px 20px 0;
+            max-width: 1100px;
+            margin: 0 auto;
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-bottom: none;
+            color: var(--text-dim);
+            font-family: 'Cinzel', serif;
+            font-size: 0.78rem;
+            letter-spacing: 0.06em;
+            padding: 8px 18px;
+            cursor: pointer;
+            transition: all 0.2s;
+            clip-path: polygon(6px 0%, 100% 0%, calc(100% - 6px) 100%, 0% 100%);
+            position: relative;
+        }
+
+        .tab-btn:hover {
+            color: var(--text-bright);
+            background: var(--bg3);
+        }
+
+        .tab-btn.active {
+            background: var(--bg3);
+            color: var(--gold-light);
+            border-color: var(--gold-dim);
+        }
+
+        /* MAIN PANEL */
+        .main {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0 20px 40px;
+        }
+
+        .panel {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-top: 1px solid var(--gold-dim);
+            padding: 24px;
+            display: none;
+        }
+
+        .panel.active {
+            display: block;
+        }
+
+        /* SECTION TITLES */
+        .section-title {
+            font-family: 'Cinzel', serif;
+            font-size: 1rem;
+            color: var(--gold);
+            letter-spacing: 0.08em;
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-title::before {
+            content: '◆';
+            font-size: 0.6rem;
+            color: var(--gold-dim);
+        }
+
+        /* GRID LAYOUTS */
+        .settings-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+
+        @media(max-width:700px) {
+            .settings-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .setting-group {
+            background: var(--bg3);
+            border: 1px solid var(--border);
+            padding: 16px;
+            border-radius: 2px;
+        }
+
+        /* FORM ELEMENTS */
+        label {
+            display: block;
+            font-size: 0.82rem;
+            color: var(--text-dim);
+            margin-bottom: 4px;
+            letter-spacing: 0.03em;
+        }
+
+        .tip {
+            font-size: 0.74rem;
+            color: var(--gold-dim);
+            font-style: italic;
+            margin-bottom: 8px;
+            line-height: 1.4;
+        }
+
+        input[type=text],
+        input[type=number],
+        select {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            color: var(--text-bright);
+            padding: 6px 10px;
+            font-family: 'Crimson Pro', serif;
+            font-size: 0.95rem;
+            width: 100%;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        input[type=text]:focus,
+        input[type=number]:focus,
+        select:focus {
+            border-color: var(--gold-dim);
+        }
+
+        input[type=number] {
+            width: 80px;
+        }
+
+        input[type=range] {
+            width: 100%;
+            accent-color: var(--gold);
+        }
+
+        select {
+            cursor: pointer;
+        }
+
+        .field-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+
+        .field-row label {
+            margin-bottom: 0;
+            min-width: 150px;
+        }
+
+        .field-row span.val {
+            color: var(--gold-light);
+            font-size: 0.9rem;
+            min-width: 35px;
+        }
+
+        /* BUTTONS */
+        .btn {
+            font-family: 'Cinzel', serif;
+            font-size: 0.78rem;
+            letter-spacing: 0.07em;
+            padding: 8px 20px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-gold {
+            background: linear-gradient(135deg, #8a6b10, #c9a227, #8a6b10);
+            color: #0b0e15;
+            font-weight: 700;
+        }
+
+        .btn-gold:hover {
+            background: linear-gradient(135deg, #a07d14, #e8c84a, #a07d14);
+            box-shadow: 0 0 16px rgba(201, 162, 39, 0.3);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-dim);
+        }
+
+        .btn-outline:hover {
+            border-color: var(--gold-dim);
+            color: var(--text-bright);
+        }
+
+        .btn-danger {
+            background: var(--crimson);
+            color: #fff;
+        }
+
+        .btn-danger:hover {
+            background: var(--crimson-bright);
+        }
+
+        .btn-sm {
+            padding: 4px 12px;
+            font-size: 0.72rem;
+        }
+
+        /* TABLES */
+        .tbl-wrap {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.88rem;
+        }
+
+        th {
+            font-family: 'Cinzel', serif;
+            font-size: 0.72rem;
+            letter-spacing: 0.06em;
+            color: var(--gold);
+            padding: 8px 10px;
+            background: var(--bg3);
+            border: 1px solid var(--border);
+            text-align: left;
+            white-space: nowrap;
+        }
+
+        td {
+            padding: 7px 10px;
+            border: 1px solid var(--border);
+            color: var(--text);
+            vertical-align: middle;
+        }
+
+        tr:hover td {
+            background: rgba(201, 162, 39, 0.04);
+        }
+
+        .role-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            font-size: 0.72rem;
+            font-family: 'Cinzel', serif;
+            letter-spacing: 0.05em;
+            border-radius: 1px;
+        }
+
+        /* SCORES INPUT */
+        .score-input {
+            width: 70px !important;
+            text-align: center;
+        }
+
+        .check-group {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .check-label {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.8rem;
+            cursor: pointer;
+        }
+
+        .check-label input {
+            width: auto;
+            accent-color: var(--gold);
+        }
+
+        /* RESULTS */
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .total-boxes-display {
+            font-family: 'Cinzel', serif;
+            font-size: 1.1rem;
+            color: var(--gold-light);
+        }
+
+        .progress-bar {
+            height: 6px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            margin-top: 4px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--gold-dim), var(--gold));
+            transition: width 0.5s ease;
+        }
+
+        .score-breakdown {
+            font-size: 0.78rem;
+            color: var(--text-dim);
+        }
+
+        .box-count {
+            font-family: 'Cinzel', serif;
+            font-size: 1rem;
+            color: var(--gold-light);
+        }
+
+        .hist-item {
+            background: var(--bg3);
+            border: 1px solid var(--border);
+            padding: 12px 16px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: border-color 0.2s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .hist-item:hover {
+            border-color: var(--gold-dim);
+        }
+
+        .hist-label {
+            font-family: 'Cinzel', serif;
+            font-size: 0.85rem;
+            color: var(--gold);
+        }
+
+        .hist-meta {
+            font-size: 0.8rem;
+            color: var(--text-dim);
+        }
+
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.75);
+            z-index: 100;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-overlay.open {
+            display: flex;
+        }
+
+        .modal {
+            background: var(--bg2);
+            border: 1px solid var(--gold-dim);
+            padding: 24px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 85vh;
+            overflow-y: auto;
+            box-shadow: 0 8px 48px rgba(0, 0, 0, 0.8);
+        }
+
+        .modal-title {
+            font-family: 'Cinzel', serif;
+            font-size: 1.1rem;
+            color: var(--gold);
+            margin-bottom: 16px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 16px;
+            justify-content: flex-end;
+        }
+
+        .alert {
+            padding: 10px 14px;
+            margin-bottom: 12px;
+            font-size: 0.85rem;
+            border-left: 3px solid;
+        }
+
+        .alert-info {
+            background: rgba(82, 160, 224, 0.1);
+            border-color: var(--support-color);
+        }
+
+        .alert-warn {
+            background: rgba(224, 162, 39, 0.1);
+            border-color: var(--gold);
+        }
+
+        .flex-gap {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+
+        .tag-active {
+            background: rgba(82, 200, 122, 0.15);
+            color: var(--tank-color);
+            border: 1px solid rgba(82, 200, 122, 0.3);
+            padding: 2px 10px;
+            font-size: 0.76rem;
+        }
+
+        .tag-inactive {
+            background: rgba(138, 128, 112, 0.15);
+            color: var(--text-dim);
+            border: 1px solid var(--border);
+            padding: 2px 10px;
+            font-size: 0.76rem;
+        }
+
+        .info-icon {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            background: var(--gold-dim);
+            color: #000;
+            border-radius: 50%;
+            font-size: 0.65rem;
+            text-align: center;
+            line-height: 16px;
+            cursor: help;
+            margin-left: 4px;
+            font-weight: 700;
+        }
+
+        .week-selector {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-dim);
+            font-style: italic;
+        }
+
+        /* ROLE EDITOR */
+        .role-editor-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 8px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            transition: border-color 0.15s;
+        }
+
+        .role-editor-row:hover {
+            border-color: var(--gold-dim);
+        }
+
+        /* TOOLTIPS */
+        #tip-box {
+            position: fixed;
+            z-index: 9999;
+            pointer-events: none;
+            max-width: 300px;
+            background: var(--bg2);
+            border: 1px solid var(--gold-dim);
+            box-shadow: 0 6px 28px rgba(0, 0, 0, 0.55);
+            padding: 12px 14px;
+            font-family: 'Crimson Pro', serif;
+            font-size: 0.83rem;
+            color: var(--text);
+            line-height: 1.55;
+            opacity: 0;
+            transform: translateY(6px);
+            transition: opacity 0.18s ease, transform 0.18s ease;
+        }
+
+        #tip-box.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        html.light #tip-box {
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+        }
+
+        .tip-title {
+            font-family: 'Cinzel', serif;
+            font-size: 0.74rem;
+            letter-spacing: 0.07em;
+            color: var(--gold);
+            margin-bottom: 8px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .tip-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            gap: 10px;
+            margin-bottom: 3px;
+        }
+
+        .tip-row .tip-label {
+            color: var(--text-dim);
+            flex-shrink: 0;
+        }
+
+        .tip-row .tip-val {
+            color: var(--text-bright);
+            text-align: right;
+            font-weight: 600;
+        }
+
+        .tip-row .tip-val.gold {
+            color: var(--gold-light);
+        }
+
+        .tip-formula {
+            margin-top: 8px;
+            padding-top: 7px;
+            border-top: 1px dashed var(--border);
+            font-size: 0.76rem;
+            color: var(--text-dim);
+            font-style: italic;
+            line-height: 1.45;
+        }
+
+        .tip-arrow {
+            color: var(--gold-dim);
+            margin: 0 3px;
+        }
+
+        /* ℹ icon in column headers */
+        .col-info {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 14px;
+            height: 14px;
+            background: var(--gold-dim);
+            color: #000;
+            border-radius: 50%;
+            font-size: 0.6rem;
+            font-weight: 700;
+            margin-left: 4px;
+            cursor: help;
+            font-family: sans-serif;
+            vertical-align: middle;
+            opacity: 0.8;
+            transition: opacity 0.15s;
+        }
+
+        .col-info:hover {
+            opacity: 1;
+        }
+
+        [data-tip-id] {
+            cursor: help;
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <button class="theme-toggle" onclick="toggleTheme()" title="Переключить тему">
+            <span class="toggle-icon">☀</span>
+            <span id="theme-label">Светлая</span>
+        </button>
+        <div class="header-title">⚔ Guild Box Distributor ⚔</div>
+        <div class="header-sub">Ragnarok X: Next Generation — <span id="guildNameDisplay">Моя Гильдия</span></div>
+    </header>
+
+    <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('settings')">⚙ Настройки</button>
+        <button class="tab-btn" onclick="switchTab('players')">👥 Участники</button>
+        <button class="tab-btn" onclick="switchTab('weekly')">📊 Неделя</button>
+        <button class="tab-btn" onclick="switchTab('distribution')">📦 Распределение</button>
+        <button class="tab-btn" onclick="switchTab('history')">📜 История</button>
+    </div>
+
+    <div class="main">
+
+        <!-- ===================== TAB: SETTINGS ===================== -->
+        <div class="panel active" id="tab-settings">
+            <div class="section-title">Основные настройки</div>
+            <div class="flex-gap" style="margin-bottom:20px">
+                <div style="flex:1;min-width:200px">
+                    <label>Название гильдии</label>
+                    <input type="text" id="cfg-guildName" value="Моя Гильдия" style="width:100%">
+                </div>
+            </div>
+
+            <div class="settings-grid">
+                <!-- Activity Weights -->
+                <div class="setting-group">
+                    <div class="section-title">Вес активностей</div>
+                    <div class="tip">Насколько важна каждая активность для гильдии. Чем выше вес — тем больше очков она
+                        даёт в итоговой оценке. Рекомендуется: GvG и KvM — 2.0, остальное — 1.0–1.5.</div>
+                    <div class="field-row">
+                        <label>GvG (война гильдий)</label>
+                        <input type="range" id="w-gvg" min="0" max="5" step="0.1" value="2.0"
+                            oninput="document.getElementById('wv-gvg').textContent=parseFloat(this.value).toFixed(1)">
+                        <span class="val" id="wv-gvg">2.0</span>
+                    </div>
+                    <div class="field-row">
+                        <label>KvM (PvP пати)</label>
+                        <input type="range" id="w-kvm" min="0" max="5" step="0.1" value="2.0"
+                            oninput="document.getElementById('wv-kvm').textContent=parseFloat(this.value).toFixed(1)">
+                        <span class="val" id="wv-kvm">2.0</span>
+                    </div>
+                    <div class="field-row">
+                        <label>Аркада (Abyss Arcade)</label>
+                        <input type="range" id="w-arcade" min="0" max="5" step="0.1" value="1.5"
+                            oninput="document.getElementById('wv-arcade').textContent=parseFloat(this.value).toFixed(1)">
+                        <span class="val" id="wv-arcade">1.5</span>
+                    </div>
+                    <div class="field-row">
+                        <label>Иномир (Other World)</label>
+                        <input type="range" id="w-otherworld" min="0" max="5" step="0.1" value="1.5"
+                            oninput="document.getElementById('wv-otherworld').textContent=parseFloat(this.value).toFixed(1)">
+                        <span class="val" id="wv-otherworld">1.5</span>
+                    </div>
+                    <div class="field-row">
+                        <label>Приказы (Orders)</label>
+                        <input type="range" id="w-orders" min="0" max="5" step="0.1" value="0.5"
+                            oninput="document.getElementById('wv-orders').textContent=parseFloat(this.value).toFixed(1)">
+                        <span class="val" id="wv-orders">0.5</span>
+                    </div>
+                </div>
+
+                <!-- Role Editor -->
+                <div class="setting-group">
+                    <div class="section-title">Роли и мультипликаторы</div>
+                    <div class="tip">Добавляйте, переименовывайте и удаляйте роли. Цвет отображается в таблицах.
+                        Мультипликатор компенсирует механическое неравенство в очках — DPS обычно 1.0, роли поддержки
+                        выше. Изменения вступают в силу сразу.</div>
+                    <div id="roles-editor" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px"></div>
+                    <button class="btn btn-outline btn-sm" onclick="addRole()">+ Добавить роль</button>
+                    <hr style="border-color:var(--border);margin:12px 0">
+                    <div class="section-title" style="font-size:0.85rem;margin-bottom:10px">KvM: режим оценки саппортов
+                    </div>
+                    <div class="tip">«По результатам пати» — саппорт получает оценку на основе общего результата пати
+                        (процент побед × средний счёт ДПС в пати), а не своего личного счёта.</div>
+                    <div class="field-row" style="flex-direction:column;align-items:flex-start;gap:6px">
+                        <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+                            <input type="radio" name="kvmMode" value="individual" id="kvm-individual" checked>
+                            Индивидуальный счёт
+                        </label>
+                        <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+                            <input type="radio" name="kvmMode" value="party" id="kvm-party"> По результатам пати
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Participation & Loyalty -->
+                <div class="setting-group">
+                    <div class="section-title">Участие и лояльность</div>
+                    <div class="tip"><b>Бонус за участие:</b> Если игрок пришёл на все активности, он получает
+                        дополнительные очки (% от максимума недели). Поощряет присутствие саппортов даже с низким
+                        счётом.</div>
+                    <div class="field-row">
+                        <label>Бонус за полное участие</label>
+                        <input type="range" id="cfg-participation" min="0" max="1" step="0.05" value="0.25"
+                            oninput="document.getElementById('cfgv-participation').textContent=(parseFloat(this.value)*100).toFixed(0)+'%'">
+                        <span class="val" id="cfgv-participation">25%</span>
+                    </div>
+                    <hr style="border-color:var(--border);margin:12px 0">
+                    <div class="tip"><b>Лояльность:</b> Множитель за каждую неделю непрерывного участия. Мотивирует
+                        игроков оставаться в гильдии после прокачки.</div>
+                    <div class="field-row">
+                        <label>Прирост за неделю</label>
+                        <input type="range" id="cfg-loyaltyInc" min="0" max="0.1" step="0.005" value="0.02"
+                            oninput="document.getElementById('cfgv-loyaltyInc').textContent=(parseFloat(this.value)*100).toFixed(1)+'%'">
+                        <span class="val" id="cfgv-loyaltyInc">2.0%</span>
+                    </div>
+                    <div class="field-row">
+                        <label>Максимальный бонус</label>
+                        <input type="range" id="cfg-loyaltyMax" min="0" max="1" step="0.05" value="0.3"
+                            oninput="document.getElementById('cfgv-loyaltyMax').textContent=(parseFloat(this.value)*100).toFixed(0)+'%'">
+                        <span class="val" id="cfgv-loyaltyMax">30%</span>
+                    </div>
+                </div>
+
+                <!-- Deficit System -->
+                <div class="setting-group">
+                    <div class="section-title">Система дефицита</div>
+                    <div class="tip">Отслеживает, насколько каждый игрок недополучил коробок по сравнению с его
+                        «заслуженной долей» за все прошлые недели. Помогает компенсировать накопленную несправедливость.
+                        <b>Вес 0</b> = система отключена. <b>Вес 1</b> = полная компенсация.
+                    </div>
+                    <div class="field-row">
+                        <label>Вес дефицита</label>
+                        <input type="range" id="cfg-deficitWeight" min="0" max="1" step="0.05" value="0.4"
+                            oninput="document.getElementById('cfgv-deficitWeight').textContent=parseFloat(this.value).toFixed(2)">
+                        <span class="val" id="cfgv-deficitWeight">0.40</span>
+                    </div>
+                    <hr style="border-color:var(--border);margin:12px 0">
+                    <div class="tip"><b>Бонус за управление:</b> Максимальный размер ручного бонуса (в условных очках)
+                        для лидеров КП, рейда, авторов гайдов. Вводится при заполнении данных недели.</div>
+                    <div class="field-row">
+                        <label>Макс. бонус за управление</label>
+                        <input type="number" id="cfg-maxMgmt" value="5" step="0.5" min="0" max="20">
+                        <span style="font-size:0.8rem;color:var(--text-dim)">очков</span>
+                    </div>
+                </div>
+
+                <!-- Box Types -->
+                <div class="setting-group">
+                    <div class="section-title">Типы коробок</div>
+                    <div class="tip">Каждый тип коробки можно привязать к активности — тогда его пул распределяется с
+                        учётом очков именно этой активности. «Без привязки» = по общему итоговому счёту. Цвет
+                        отображается в итоговой таблице.</div>
+                    <div id="boxtypes-editor" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px">
+                    </div>
+                    <button class="btn btn-outline btn-sm" onclick="addBoxType()">+ Добавить тип</button>
+                    <hr style="border-color:var(--border);margin:12px 0">
+                    <div class="tip"><b>Смешивание (blend):</b> Насколько сильно коробка привязана к своей активности.
+                        При 100% — чисто по очкам своей активности. При 0% — по общему счёту. Значение 70%: активность
+                        имеет приоритет, но общий вклад смягчает крайности для саппортов.
+                    </div>
+                    <div class="field-row">
+                        <label>Привязка к активности</label>
+                        <input type="range" id="cfg-blendRatio" min="0" max="1" step="0.05" value="0.7"
+                            oninput="document.getElementById('cfgv-blendRatio').textContent=(parseFloat(this.value)*100).toFixed(0)+'%'">
+                        <span class="val" id="cfgv-blendRatio">70%</span>
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-top:20px;display:flex;gap:10px">
+                <button class="btn btn-gold" onclick="saveSettings()">💾 Сохранить настройки</button>
+                <button class="btn btn-outline" onclick="resetSettings()">↩ Сбросить</button>
+            </div>
+            <div id="settings-saved" style="color:var(--gold);font-size:0.85rem;margin-top:8px;display:none">✓ Настройки
+                сохранены</div>
+        </div>
+
+        <!-- ===================== TAB: PLAYERS ===================== -->
+        <div class="panel" id="tab-players">
+            <div
+                style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px">
+                <div class="section-title" style="margin-bottom:0">Список участников гильдии</div>
+                <button class="btn btn-gold" onclick="openPlayerModal()">+ Добавить участника</button>
+            </div>
+            <div class="alert alert-info">
+                <b>Совет:</b> Роль влияет на ролевой мультипликатор при расчёте. «Недели в гильдии» влияют на бонус
+                лояльности. Неактивных игроков можно скрыть — они не будут участвовать в распределении.
+            </div>
+            <div class="tbl-wrap">
+                <table id="players-table">
+                    <thead>
+                        <tr>
+                            <th>Имя</th>
+                            <th>Роль</th>
+                            <th>Класс</th>
+                            <th>Недель в гильдии</th>
+                            <th>Лояльность</th>
+                            <th>Статус</th>
+                            <th>Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody id="players-tbody"></tbody>
+                </table>
+            </div>
+            <div id="players-empty" class="empty-state">Участники не добавлены. Нажмите «Добавить участника».</div>
+        </div>
+
+        <!-- ===================== TAB: WEEKLY ===================== -->
+        <div class="panel" id="tab-weekly">
+            <div class="week-selector">
+                <div class="section-title" style="margin-bottom:0">Данные недели:</div>
+                <select id="weekSelect" onchange="loadWeekData()"></select>
+                <button class="btn btn-gold" onclick="createNewWeek()">+ Новая неделя</button>
+                <button class="btn btn-outline btn-sm" onclick="deleteCurrentWeek()">🗑 Удалить</button>
+            </div>
+
+            <div id="weekly-content">
+                <div class="empty-state">Создайте новую неделю для ввода данных.</div>
+            </div>
+        </div>
+
+        <!-- ===================== TAB: DISTRIBUTION ===================== -->
+        <div class="panel" id="tab-distribution">
+            <div class="section-title">Расчёт распределения коробок</div>
+            <div class="alert alert-warn" id="dist-no-week" style="display:none">Сначала выберите или создайте неделю во
+                вкладке «Неделя».</div>
+
+            <div id="dist-content" style="display:none">
+                <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px;flex-wrap:wrap">
+                    <span style="font-family:'Cinzel',serif;font-size:0.85rem;color:var(--text-dim)">Неделя:</span>
+                    <span id="dist-week-label"
+                        style="color:var(--gold);font-family:'Cinzel',serif;font-size:0.9rem"></span>
+                </div>
+
+                <div class="setting-group" style="margin-bottom:20px">
+                    <div class="section-title" style="font-size:0.85rem">Коробки этой недели</div>
+                    <div class="tip">Введите количество коробок каждого типа, которые получила гильдия. Типы коробок и
+                        их привязку к активностям можно настроить в разделе «Настройки → Типы коробок».</div>
+                    <div id="box-inputs-grid"
+                        style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;margin-bottom:12px">
+                    </div>
+                    <div style="margin-top:4px">
+                        <b style="color:var(--gold-light)">Итого коробок: <span id="total-boxes-count">0</span></b>
+                    </div>
+                </div>
+
+                <button class="btn btn-gold" onclick="calculateDistribution()" style="margin-bottom:20px">⚔ Рассчитать
+                    распределение</button>
+
+                <div id="distribution-results" style="display:none">
+                    <div class="result-header">
+                        <div>
+                            <div class="section-title" style="margin-bottom:4px">Результаты распределения</div>
+                            <div class="total-boxes-display">Всего коробок: <span id="res-total-boxes">0</span></div>
+                        </div>
+                        <button class="btn btn-outline" onclick="saveDistribution()">💾 Сохранить в историю</button>
+                    </div>
+                    <div class="tbl-wrap">
+                        <table id="results-table">
+                            <thead>
+                                <tr id="results-thead-tr"></tr>
+                            </thead>
+                            <tbody id="results-tbody"></tbody>
+                        </table>
+                    </div>
+                    <div style="margin-top:12px;font-size:0.8rem;color:var(--text-dim)">
+                        * Все промежуточные очки нормализованы: 1.0 = наилучший результат среди участников данной
+                        недели. Применены: ролевой множитель, вес активности, бонус участия, лояльность, коррекция
+                        дефицита. Коробки каждого типа распределяются по смешанному счёту (очки своей активности × blend
+                        + общий счёт × (1-blend)).
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===================== TAB: HISTORY ===================== -->
+        <div class="panel" id="tab-history">
+            <div class="section-title">История распределений</div>
+            <div id="history-list"></div>
+            <div id="history-empty" class="empty-state" style="display:none">История пуста. Рассчитайте и сохраните
+                распределение во вкладке «Распределение».</div>
+        </div>
+
+    </div><!-- /main -->
+
+    <!-- PLAYER MODAL -->
+    <div class="modal-overlay" id="playerModal">
+        <div class="modal">
+            <div class="modal-title" id="playerModalTitle">Добавить участника</div>
+            <input type="hidden" id="edit-player-id" value="">
+            <div style="margin-bottom:10px">
+                <label>Имя игрока</label>
+                <input type="text" id="edit-name" placeholder="Nickname" style="width:100%">
+            </div>
+            <div style="margin-bottom:10px">
+                <label>Роль</label>
+                <select id="edit-role" style="width:100%">
+                    <option value="DPS">DPS</option>
+                    <option value="Support">Support</option>
+                    <option value="Tank">Tank</option>
+                </select>
+            </div>
+            <div style="margin-bottom:10px">
+                <label>Класс (необязательно)</label>
+                <input type="text" id="edit-class" placeholder="Например: Priest, Knight, Ranger..." style="width:100%">
+            </div>
+            <div style="margin-bottom:10px">
+                <label>Дата вступления в гильдию</label>
+                <input type="date" id="edit-joinDate" style="width:100%" oninput="updateJoinDateDisplay()">
+                <div id="edit-weeks-display" style="font-size:0.78rem;color:var(--gold);margin-top:4px"></div>
+            </div>
+            <div style="margin-bottom:10px">
+                <label>Статус</label>
+                <select id="edit-active" style="width:100%">
+                    <option value="true">Активный</option>
+                    <option value="false">Неактивный</option>
+                </select>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-outline" onclick="closePlayerModal()">Отмена</button>
+                <button class="btn btn-gold" onclick="savePlayer()">Сохранить</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- HISTORY DETAIL MODAL -->
+    <div class="modal-overlay" id="historyModal">
+        <div class="modal" style="max-width:800px;width:95%">
+            <div class="modal-title" id="histModalTitle">История недели</div>
+            <div id="histModalContent"></div>
+            <div class="modal-actions">
+                <button class="btn btn-outline" onclick="closeHistModal()">Закрыть</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============================
+        // STATE
+        // ============================
+
+        // Default box types — one per activity that awards boxes
+        const DEFAULT_BOX_TYPES = [
+            { id: 'bt_gvg', name: 'GvG Box', activityKey: 'gvg', color: '#e05252' },
+            { id: 'bt_kvm', name: 'KvM Box', activityKey: 'kvm', color: '#e07a52' },
+            { id: 'bt_arcade', name: 'Arcade Box', activityKey: 'arcade', color: '#c9a227' },
+            { id: 'bt_otherworld', name: 'Otherworld Box', activityKey: 'otherworld', color: '#52a0e0' },
+        ];
+
+        // Default roles — used both for fresh start and as migration fallback
+        const DEFAULT_ROLES = [
+            { id: 'role_dps', name: 'DPS', color: '#e05252', multiplier: 1.00 },
+            { id: 'role_support', name: 'Support', color: '#52a0e0', multiplier: 1.35 },
+            { id: 'role_tank', name: 'Tank', color: '#52c87a', multiplier: 1.15 },
+        ];
+
+        let STATE = {
+            guild: { name: 'Моя Гильдия' },
+            roles: DEFAULT_ROLES.map(r => ({ ...r })),
+            boxTypes: DEFAULT_BOX_TYPES.map(b => ({ ...b })),  // configurable box type list
+            settings: {
+                activityWeights: { gvg: 2.0, kvm: 2.0, arcade: 1.5, otherworld: 1.5, orders: 0.5 },
+                kvmMode: 'individual',
+                participationFactor: 0.25,
+                loyaltyIncrement: 0.02,
+                maxLoyaltyBonus: 0.3,
+                deficitWeight: 0.4,
+                maxMgmt: 5,
+                // blendRatio: how much a box type's distribution uses its own activity score vs the global score.
+                // 1.0 = purely by own activity, 0.0 = purely by global score (old behaviour).
+                // Default 0.7: mostly activity-specific but global score still buffers support classes.
+                blendRatio: 0.7
+            },
+            players: [],
+            weeks: [],
+            currentWeekId: null,
+            _nextId: 1
+        };
+
+        const ACTIVITIES = [
+            { key: 'gvg', label: 'GvG' },
+            { key: 'kvm', label: 'KvM' },
+            { key: 'arcade', label: 'Аркада' },
+            { key: 'otherworld', label: 'Иномир' },
+            { key: 'orders', label: 'Приказы' }
+        ];
+
+        // ============================
+        // PERSISTENCE
+        // ============================
+        function save() {
+            try { localStorage.setItem('roxGuildState', JSON.stringify(STATE)); } catch (e) { }
+        }
+        function load() {
+            try {
+                const raw = localStorage.getItem('roxGuildState');
+                if (!raw) return;
+                const saved = JSON.parse(raw);
+                STATE = saved;
+
+                // ── MIGRATION: ensure boxTypes array exists ──
+                if (!STATE.boxTypes || !Array.isArray(STATE.boxTypes) || STATE.boxTypes.length === 0) {
+                    // Migrate from old flat boxCounts on weeks — reconstruct default types
+                    STATE.boxTypes = DEFAULT_BOX_TYPES.map(b => ({ ...b }));
+                }
+                // Ensure blendRatio setting exists
+                if (STATE.settings.blendRatio === undefined) STATE.settings.blendRatio = 0.7;
+
+                // ── MIGRATION: old saves had settings.roleMultipliers instead of STATE.roles ──
+                if (!STATE.roles || !Array.isArray(STATE.roles) || STATE.roles.length === 0) {
+                    const oldMult = STATE.settings?.roleMultipliers || {};
+                    STATE.roles = DEFAULT_ROLES.map(r => {
+                        // Try to find an old-style key that matches (DPS, Support, Tank)
+                        const legacyKey = Object.keys(oldMult).find(k => k.toLowerCase() === r.name.toLowerCase());
+                        return { ...r, multiplier: legacyKey ? oldMult[legacyKey] : r.multiplier };
+                    });
+                }
+                // Ensure each role has a color (older saves may lack it)
+                STATE.roles.forEach((r, i) => {
+                    if (!r.color) r.color = DEFAULT_ROLES[i % DEFAULT_ROLES.length].color;
+                });
+                // Clean up legacy key if present
+                if (STATE.settings?.roleMultipliers) delete STATE.settings.roleMultipliers;
+
+                // ── MIGRATION: players with old string role like "DPS" → match to role id ──
+                STATE.players.forEach(p => {
+                    if (p.role && !p.role.startsWith('role_')) {
+                        const match = STATE.roles.find(r => r.name === p.role || r.id === p.role);
+                        p.role = match ? match.id : (STATE.roles[0]?.id || 'role_dps');
+                    }
+                });
+
+                // ── MIGRATION: players with numeric p.weeks → approximate joinDate ──
+                STATE.players.forEach(p => {
+                    if (!p.joinDate && p.weeks !== undefined) {
+                        // Backfill: approximate join date = now minus weeks * 7 days
+                        const approxJoin = new Date(Date.now() - (p.weeks || 0) * 7 * 24 * 3600 * 1000);
+                        p.joinDate = approxJoin.toISOString();
+                    }
+                });
+            } catch (e) { }
+        }
+        function genId() { return STATE._nextId++; }
+
+        // Returns the number of complete weeks a player has been in the guild,
+        // computed from p.joinDate (ISO string). Falls back to p.weeks for old saves.
+        function playerWeeks(p) {
+            if (p.joinDate) {
+                const ms = Date.now() - new Date(p.joinDate).getTime();
+                return Math.max(0, Math.floor(ms / (7 * 24 * 3600 * 1000)));
+            }
+            return p.weeks || 0; // legacy fallback
+        }
+
+        // Format a date string to dd.mm.yyyy
+        function fmtDate(iso) {
+            if (!iso) return '—';
+            const d = new Date(iso);
+            return d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        }
+
+        // ============================
+        // TABS
+        // ============================
+        function switchTab(name) {
+            document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('tab-' + name).classList.add('active');
+            event.target.classList.add('active');
+            if (name === 'players') renderPlayers();
+            if (name === 'weekly') renderWeeklyTab();
+            if (name === 'distribution') renderDistributionTab();
+            if (name === 'history') renderHistory();
+        }
+
+        // ============================
+        // SETTINGS
+        // ============================
+        function loadSettingsUI() {
+            const s = STATE.settings;
+            document.getElementById('cfg-guildName').value = STATE.guild.name;
+            for (const k of Object.keys(s.activityWeights)) {
+                const el = document.getElementById('w-' + k);
+                const vEl = document.getElementById('wv-' + k);
+                if (el) { el.value = s.activityWeights[k]; vEl.textContent = parseFloat(s.activityWeights[k]).toFixed(1); }
+            }
+            document.getElementById(s.kvmMode === 'party' ? 'kvm-party' : 'kvm-individual').checked = true;
+            document.getElementById('cfg-participation').value = s.participationFactor;
+            document.getElementById('cfgv-participation').textContent = Math.round(s.participationFactor * 100) + '%';
+            document.getElementById('cfg-loyaltyInc').value = s.loyaltyIncrement;
+            document.getElementById('cfgv-loyaltyInc').textContent = (s.loyaltyIncrement * 100).toFixed(1) + '%';
+            document.getElementById('cfg-loyaltyMax').value = s.maxLoyaltyBonus;
+            document.getElementById('cfgv-loyaltyMax').textContent = Math.round(s.maxLoyaltyBonus * 100) + '%';
+            document.getElementById('cfg-deficitWeight').value = s.deficitWeight;
+            document.getElementById('cfgv-deficitWeight').textContent = parseFloat(s.deficitWeight).toFixed(2);
+            document.getElementById('cfg-maxMgmt').value = s.maxMgmt;
+            const br = s.blendRatio ?? 0.7;
+            document.getElementById('cfg-blendRatio').value = br;
+            document.getElementById('cfgv-blendRatio').textContent = Math.round(br * 100) + '%';
+            renderRolesEditor();
+            renderBoxTypesEditor();
+        }
+
+        function saveSettings() {
+            STATE.guild.name = document.getElementById('cfg-guildName').value.trim() || 'Моя Гильдия';
+            document.getElementById('guildNameDisplay').textContent = STATE.guild.name;
+            const s = STATE.settings;
+            for (const k of Object.keys(s.activityWeights)) {
+                const el = document.getElementById('w-' + k);
+                if (el) s.activityWeights[k] = parseFloat(el.value);
+            }
+            s.kvmMode = document.querySelector('input[name=kvmMode]:checked').value;
+            s.participationFactor = parseFloat(document.getElementById('cfg-participation').value);
+            s.loyaltyIncrement = parseFloat(document.getElementById('cfg-loyaltyInc').value);
+            s.maxLoyaltyBonus = parseFloat(document.getElementById('cfg-loyaltyMax').value);
+            s.deficitWeight = parseFloat(document.getElementById('cfg-deficitWeight').value);
+            s.maxMgmt = parseFloat(document.getElementById('cfg-maxMgmt').value);
+            s.blendRatio = parseFloat(document.getElementById('cfg-blendRatio').value);
+            save();
+            const msg = document.getElementById('settings-saved');
+            msg.style.display = 'block';
+            setTimeout(() => msg.style.display = 'none', 2000);
+        }
+
+        function resetSettings() {
+            if (!confirm('Сбросить настройки и роли до значений по умолчанию?')) return;
+            STATE.settings = {
+                activityWeights: { gvg: 2.0, kvm: 2.0, arcade: 1.5, otherworld: 1.5, orders: 0.5 },
+                kvmMode: 'individual',
+                participationFactor: 0.25,
+                loyaltyIncrement: 0.02,
+                maxLoyaltyBonus: 0.3,
+                deficitWeight: 0.4,
+                maxMgmt: 5,
+                blendRatio: 0.7
+            };
+            STATE.roles = DEFAULT_ROLES.map(r => ({ ...r }));
+            STATE.boxTypes = DEFAULT_BOX_TYPES.map(b => ({ ...b }));
+            loadSettingsUI();
+            save();
+        }
+
+        // ============================
+        // ROLES EDITOR
+        // ============================
+
+        // Returns role object by id, or a fallback
+        function getRole(roleId) {
+            return STATE.roles.find(r => r.id === roleId) || STATE.roles[0] || { id: '?', name: '?', color: '#888', multiplier: 1 };
+        }
+
+        // Renders the inline roles editor table inside settings panel
+        function renderRolesEditor() {
+            const container = document.getElementById('roles-editor');
+            if (!container) return;
+            container.innerHTML = STATE.roles.map((r, idx) => `
+    <div class="role-editor-row" id="rer-${r.id}">
+      <input type="color" value="${r.color}" title="Цвет"
+             style="width:32px;height:32px;padding:2px;border:1px solid var(--border);background:none;cursor:pointer;flex-shrink:0"
+             onchange="updateRoleField('${r.id}','color',this.value)">
+      <input type="text" value="${esc(r.name)}" placeholder="Название роли" style="flex:1;min-width:80px"
+             onchange="updateRoleField('${r.id}','name',this.value)"
+             oninput="updateRoleField('${r.id}','name',this.value)">
+      <span style="font-size:0.8rem;color:var(--text-dim);white-space:nowrap">× мульт.</span>
+      <input type="number" value="${r.multiplier}" step="0.05" min="0.1" max="5" style="width:72px"
+             onchange="updateRoleField('${r.id}','multiplier',parseFloat(this.value))">
+      <button class="btn btn-danger btn-sm" onclick="deleteRole('${r.id}')"
+              ${STATE.roles.length <= 1 ? 'disabled title="Нельзя удалить последнюю роль"' : ''}>✕</button>
+    </div>`).join('');
+        }
+
+        // Inline update without full re-render to avoid losing focus
+        function updateRoleField(roleId, field, value) {
+            const role = STATE.roles.find(r => r.id === roleId);
+            if (!role) return;
+            role[field] = field === 'multiplier' ? (parseFloat(value) || 1) : value;
+            save();
+            // Re-render only the color swatch preview if color changed
+            if (field === 'color' || field === 'name') renderRolesEditor(); // lightweight
+        }
+
+        function addRole() {
+            const id = 'role_' + genId();
+            STATE.roles.push({ id, name: 'Новая роль', color: '#b0b0b0', multiplier: 1.0 });
+            save();
+            renderRolesEditor();
+        }
+
+        function deleteRole(roleId) {
+            if (STATE.roles.length <= 1) { alert('Нельзя удалить последнюю роль'); return; }
+            // Check if any player uses this role
+            const affected = STATE.players.filter(p => p.role === roleId);
+            if (affected.length > 0) {
+                const fallback = STATE.roles.find(r => r.id !== roleId);
+                if (!confirm(`Роль используется у ${affected.length} игр. Они будут переназначены на «${fallback.name}». Продолжить?`)) return;
+                affected.forEach(p => p.role = fallback.id);
+            }
+            STATE.roles = STATE.roles.filter(r => r.id !== roleId);
+            save();
+            renderRolesEditor();
+            renderPlayers(); // refresh player list if open
+        }
+
+        // ============================
+        // PLAYERS
+        // ============================
+        function roleBadgeHTML(roleId) {
+            const r = getRole(roleId);
+            // Inline style so any custom color works without CSS class
+            const bg = r.color + '28'; // ~16% opacity hex
+            const brd = r.color + '66'; // ~40% opacity
+            return `<span class="role-badge" style="background:${bg};color:${r.color};border:1px solid ${brd}">${esc(r.name)}</span>`;
+        }
+
+        function renderPlayers() {
+            const tbody = document.getElementById('players-tbody');
+            const empty = document.getElementById('players-empty');
+            const tbl = document.getElementById('players-table');
+            if (!STATE.players.length) {
+                tbl.style.display = 'none'; empty.style.display = 'block'; return;
+            }
+            tbl.style.display = ''; empty.style.display = 'none';
+            const s = STATE.settings;
+
+            // Update column header to reflect new field
+            document.querySelector('#players-table thead tr').innerHTML =
+                '<th>Имя</th><th>Роль</th><th>Класс</th><th>Дата вступления</th><th>Недель</th><th>Лояльность</th><th>Статус</th><th>Действия</th>';
+
+            tbody.innerHTML = STATE.players.map(p => {
+                const weeks = playerWeeks(p);
+                const loyaltyBonus = Math.min(weeks * s.loyaltyIncrement, s.maxLoyaltyBonus);
+                const loyaltyMult = (1 + loyaltyBonus).toFixed(2);
+                return `<tr>
+      <td><b>${esc(p.name)}</b></td>
+      <td>${roleBadgeHTML(p.role)}</td>
+      <td>${esc(p.class || '—')}</td>
+      <td style="color:var(--text-dim);font-size:0.88rem">${fmtDate(p.joinDate)}</td>
+      <td style="color:var(--text)">${weeks}</td>
+      <td style="color:var(--gold)">×${loyaltyMult} <span style="color:var(--text-dim);font-size:0.78rem">(+${Math.round(loyaltyBonus * 100)}%)</span></td>
+      <td><span class="${p.active ? 'tag-active' : 'tag-inactive'}">${p.active ? 'Активен' : 'Неактивен'}</span></td>
+      <td>
+        <button class="btn btn-outline btn-sm" onclick="openPlayerModal(${p.id})">✏ Изм.</button>
+        <button class="btn btn-danger btn-sm" onclick="deletePlayer(${p.id})" style="margin-left:4px">✕</button>
+      </td>
+    </tr>`;
+            }).join('');
+        }
+
+        function openPlayerModal(id = null) {
+            const sel = document.getElementById('edit-role');
+            sel.innerHTML = STATE.roles.map(r =>
+                `<option value="${r.id}">${esc(r.name)}</option>`
+            ).join('');
+
+            document.getElementById('edit-player-id').value = id || '';
+
+            // Default join date = today
+            const todayISO = new Date().toISOString().slice(0, 10);
+
+            if (id) {
+                const p = STATE.players.find(x => x.id === id);
+                document.getElementById('playerModalTitle').textContent = 'Редактировать участника';
+                document.getElementById('edit-name').value = p.name;
+                sel.value = p.role;
+                document.getElementById('edit-class').value = p.class || '';
+                document.getElementById('edit-joinDate').value = p.joinDate ? p.joinDate.slice(0, 10) : todayISO;
+                document.getElementById('edit-active').value = String(p.active);
+            } else {
+                document.getElementById('playerModalTitle').textContent = 'Добавить участника';
+                document.getElementById('edit-name').value = '';
+                sel.value = STATE.roles[0]?.id || '';
+                document.getElementById('edit-class').value = '';
+                document.getElementById('edit-joinDate').value = todayISO;
+                document.getElementById('edit-active').value = 'true';
+            }
+            updateJoinDateDisplay();
+            document.getElementById('playerModal').classList.add('open');
+        }
+
+        // Live-updates the "X недель" hint under the date picker
+        function updateJoinDateDisplay() {
+            const dateVal = document.getElementById('edit-joinDate').value;
+            const display = document.getElementById('edit-weeks-display');
+            if (!dateVal || !display) return;
+            const ms = Date.now() - new Date(dateVal).getTime();
+            const weeks = Math.max(0, Math.floor(ms / (7 * 24 * 3600 * 1000)));
+            const s = STATE.settings;
+            const loyaltyBonus = Math.min(weeks * s.loyaltyIncrement, s.maxLoyaltyBonus);
+            const mult = (1 + loyaltyBonus).toFixed(2);
+            display.textContent = `${weeks} нед. в гильдии → лояльность ×${mult} (+${Math.round(loyaltyBonus * 100)}%)`;
+        }
+
+        function closePlayerModal() { document.getElementById('playerModal').classList.remove('open'); }
+
+        function savePlayer() {
+            const name = document.getElementById('edit-name').value.trim();
+            if (!name) { alert('Введите имя игрока'); return; }
+            const joinDateVal = document.getElementById('edit-joinDate').value;
+            if (!joinDateVal) { alert('Укажите дату вступления'); return; }
+            const id = document.getElementById('edit-player-id').value;
+            const data = {
+                name,
+                role: document.getElementById('edit-role').value,
+                class: document.getElementById('edit-class').value.trim(),
+                joinDate: new Date(joinDateVal).toISOString(),
+                active: document.getElementById('edit-active').value === 'true'
+            };
+            if (id) {
+                const p = STATE.players.find(x => x.id === parseInt(id));
+                Object.assign(p, data);
+            } else {
+                STATE.players.push({ id: genId(), ...data });
+            }
+            closePlayerModal();
+            save();
+            renderPlayers();
+        }
+
+        function deletePlayer(id) {
+            if (!confirm('Удалить участника? Данные о его очках за недели останутся.')) return;
+            STATE.players = STATE.players.filter(p => p.id !== id);
+            save();
+            renderPlayers();
+        }
+
+        // ============================
+        // WEEKLY TAB
+        // ============================
+        function renderWeeklyTab() {
+            const sel = document.getElementById('weekSelect');
+            sel.innerHTML = STATE.weeks.map(w => `<option value="${w.id}">${esc(w.label)}</option>`).join('');
+            if (!STATE.weeks.length) {
+                document.getElementById('weekly-content').innerHTML = '<div class="empty-state">Создайте новую неделю для ввода данных.</div>';
+                return;
+            }
+            if (!STATE.currentWeekId || !STATE.weeks.find(w => w.id === STATE.currentWeekId)) {
+                STATE.currentWeekId = STATE.weeks[STATE.weeks.length - 1].id;
+            }
+            sel.value = STATE.currentWeekId;
+            renderWeekForm();
+        }
+
+        function loadWeekData() {
+            STATE.currentWeekId = parseInt(document.getElementById('weekSelect').value);
+            renderWeekForm();
+        }
+
+        function createNewWeek() {
+            if (!STATE.players.length) { alert('Сначала добавьте участников во вкладке «Участники»'); return; }
+            const now = new Date();
+            const label = prompt('Название недели:', `Неделя ${now.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' })}`);
+            if (!label) return;
+            const week = {
+                id: genId(),
+                label,
+                date: now.toISOString(),
+                entries: STATE.players.map(p => ({
+                    playerId: p.id,
+                    scores: { gvg: 0, kvm: 0, arcade: 0, otherworld: 0, orders: 0 },
+                    participated: { gvg: false, kvm: false, arcade: false, otherworld: false },
+                    managementBonus: 0
+                })),
+                distribution: null
+            };
+            STATE.weeks.push(week);
+            STATE.currentWeekId = week.id;
+            save();
+            renderWeeklyTab();
+        }
+
+        function deleteCurrentWeek() {
+            if (!STATE.currentWeekId) return;
+            if (!confirm('Удалить эту неделю? Данные будут потеряны.')) return;
+            STATE.weeks = STATE.weeks.filter(w => w.id !== STATE.currentWeekId);
+            STATE.currentWeekId = STATE.weeks.length ? STATE.weeks[STATE.weeks.length - 1].id : null;
+            save();
+            renderWeeklyTab();
+        }
+
+        function renderWeekForm() {
+            const week = STATE.weeks.find(w => w.id === STATE.currentWeekId);
+            if (!week) return;
+            const activePlayers = STATE.players.filter(p => p.active);
+            // Ensure entries exist for all current active players
+            for (const p of activePlayers) {
+                if (!week.entries.find(e => e.playerId === p.id)) {
+                    week.entries.push({ playerId: p.id, scores: { gvg: 0, kvm: 0, arcade: 0, otherworld: 0, orders: 0 }, participated: { gvg: false, kvm: false, arcade: false, otherworld: false }, managementBonus: 0 });
+                }
+            }
+            const s = STATE.settings;
+
+            let html = `<div class="alert alert-info">Введите очки каждого участника за эту неделю. Отметьте «✓» активности, в которых участвовал игрок (даже с нулевым счётом) — это даёт бонус за присутствие. Нажмите «Сохранить» после ввода.</div>`;
+
+            html += `<div class="tbl-wrap"><table>
+    <thead><tr>
+      <th>Игрок</th><th>Роль</th>
+      ${ACTIVITIES.map(a => `<th>${a.label}<br><span style="font-size:0.68rem;font-weight:400;color:var(--text-dim)">очки / участие</span></th>`).join('')}
+      <th>Упр. бонус<br><span style="font-size:0.68rem;font-weight:400;color:var(--text-dim)">0–${s.maxMgmt}</span></th>
+    </tr></thead><tbody>`;
+
+            for (const p of activePlayers) {
+                const entry = week.entries.find(e => e.playerId === p.id) || {};
+                const scores = entry.scores || {};
+                const participated = entry.participated || {};
+                html += `<tr data-player="${p.id}">
+      <td><b>${esc(p.name)}</b></td>
+      <td>${roleBadgeHTML(p.role)}</td>`;
+
+                for (const act of ACTIVITIES) {
+                    const scoreVal = scores[act.key] || 0;
+                    const partVal = participated[act.key] ? 'checked' : '';
+                    const showPart = act.key !== 'orders'; // orders don't have "participation" checkbox
+                    html += `<td style="white-space:nowrap">
+        <input type="number" class="score-input" data-pid="${p.id}" data-act="${act.key}" value="${scoreVal}" min="0" step="1" onchange="updateEntry(${week.id},${p.id},'score','${act.key}',this.value)">
+        ${showPart ? `<br><label style="font-size:0.76rem;cursor:pointer;margin-top:4px;display:inline-flex;align-items:center;gap:3px"><input type="checkbox" ${partVal} onchange="updateEntry(${week.id},${p.id},'participated','${act.key}',this.checked)"> Участ.</label>` : ''}
+      </td>`;
+                }
+
+                html += `<td><input type="number" class="score-input" value="${entry.managementBonus || 0}" min="0" max="${s.maxMgmt}" step="0.5" onchange="updateEntry(${week.id},${p.id},'mgmt',null,this.value)"></td>`;
+                html += `</tr>`;
+            }
+
+            html += `</tbody></table></div>`;
+
+            // KvM Party Performance section (if mode enabled)
+            if (s.kvmMode === 'party') {
+                html += `<div class="setting-group" style="margin-top:20px">
+      <div class="section-title" style="font-size:0.85rem">KvM — Данные пати (для оценки саппортов)</div>
+      <div class="tip">Если включён режим «По результатам пати», укажите для каждого саппорта ID его пати, а ниже — результаты каждой пати (победы/поражения).</div>
+      <div class="alert alert-warn" style="margin-bottom:10px">⚠ Функция в разработке. Пока используется индивидуальный счёт для всех ролей.</div>
+    </div>`;
+            }
+
+            html += `<div style="margin-top:16px;display:flex;gap:10px">
+    <button class="btn btn-gold" onclick="saveWeekData(${week.id})">💾 Сохранить данные недели</button>
+  </div>
+  <div id="week-saved-msg" style="display:none;color:var(--gold);margin-top:8px;font-size:0.85rem">✓ Данные сохранены</div>`;
+
+            document.getElementById('weekly-content').innerHTML = html;
+        }
+
+        function updateEntry(weekId, playerId, type, actKey, value) {
+            const week = STATE.weeks.find(w => w.id === weekId);
+            if (!week) return;
+            let entry = week.entries.find(e => e.playerId === playerId);
+            if (!entry) { entry = { playerId, scores: {}, participated: {}, managementBonus: 0 }; week.entries.push(entry); }
+            if (type === 'score') entry.scores[actKey] = parseFloat(value) || 0;
+            else if (type === 'participated') entry.participated[actKey] = !!value;
+            else if (type === 'mgmt') entry.managementBonus = parseFloat(value) || 0;
+        }
+
+        function saveWeekData(weekId) {
+            save();
+            const msg = document.getElementById('week-saved-msg');
+            if (msg) { msg.style.display = 'block'; setTimeout(() => msg.style.display = 'none', 2000); }
+        }
+
+        // ============================
+        // DISTRIBUTION TAB
+        // ============================
+        function renderDistributionTab() {
+            const noWeek = document.getElementById('dist-no-week');
+            const content = document.getElementById('dist-content');
+            if (!STATE.weeks.length) {
+                noWeek.style.display = 'block'; content.style.display = 'none'; return;
+            }
+            noWeek.style.display = 'none'; content.style.display = 'block';
+            const week = STATE.weeks.find(w => w.id === STATE.currentWeekId) || STATE.weeks[STATE.weeks.length - 1];
+            document.getElementById('dist-week-label').textContent = week ? week.label : '';
+
+            // Build the dynamic box-type input grid
+            renderBoxInputs(week);
+            document.getElementById('distribution-results').style.display = 'none';
+        }
+
+        // Renders one input card per box type
+        function renderBoxInputs(week) {
+            const grid = document.getElementById('box-inputs-grid');
+            if (!grid) return;
+            grid.innerHTML = STATE.boxTypes.map(bt => {
+                const savedCount = week?.boxCounts?.[bt.id] ?? 0;
+                const actLabel = bt.activityKey
+                    ? (ACTIVITIES.find(a => a.key === bt.activityKey)?.label || bt.activityKey)
+                    : 'Без привязки';
+                return `
+      <div style="background:var(--bg3);border:1px solid var(--border);padding:12px;border-left:3px solid ${bt.color}">
+        <div style="font-family:'Cinzel',serif;font-size:0.78rem;color:${bt.color};margin-bottom:2px">${esc(bt.name)}</div>
+        <div style="font-size:0.72rem;color:var(--text-dim);margin-bottom:8px">→ ${esc(actLabel)}</div>
+        <input type="number" id="boxinput-${bt.id}" value="${savedCount}" min="0" step="1"
+               style="width:100%" oninput="updateTotalBoxes()">
+      </div>`;
+            }).join('');
+            updateTotalBoxes();
+        }
+
+        function updateTotalBoxes() {
+            const total = STATE.boxTypes.reduce((sum, bt) => {
+                return sum + (parseInt(document.getElementById('boxinput-' + bt.id)?.value) || 0);
+            }, 0);
+            const el = document.getElementById('total-boxes-count');
+            if (el) el.textContent = total;
+        }
+
+        // ============================
+        // ALGORITHM
+        // ============================
+        function calculateDistribution() {
+            const week = STATE.weeks.find(w => w.id === STATE.currentWeekId) || STATE.weeks[STATE.weeks.length - 1];
+            if (!week) { alert('Нет данных недели'); return; }
+
+            const s = STATE.settings;
+
+            // Read box counts per type from the dynamic inputs
+            const boxCounts = {};
+            let totalBoxes = 0;
+            for (const bt of STATE.boxTypes) {
+                const v = parseInt(document.getElementById('boxinput-' + bt.id)?.value) || 0;
+                boxCounts[bt.id] = v;
+                totalBoxes += v;
+            }
+            week.boxCounts = boxCounts;
+            save();
+
+            const activePlayers = STATE.players.filter(p => p.active);
+            if (!activePlayers.length) { alert('Нет активных участников'); return; }
+
+            // --- Step 1: global max per activity this week (for normalization) ---
+            const globalMax = {};
+            for (const act of ACTIVITIES) {
+                const scores = activePlayers.map(p => {
+                    const e = week.entries.find(e => e.playerId === p.id);
+                    return e ? (e.scores[act.key] || 0) : 0;
+                });
+                globalMax[act.key] = Math.max(...scores, 0.001);
+            }
+
+            // --- Step 2: compute each player's per-activity weighted scores + overall final score ---
+            const results = activePlayers.map(p => {
+                const entry = week.entries.find(e => e.playerId === p.id) || { scores: {}, participated: {}, managementBonus: 0 };
+                const roleMult = getRole(p.role).multiplier;
+
+                const breakdown = {};
+                let activityTotal = 0;
+                for (const act of ACTIVITIES) {
+                    const raw = entry.scores[act.key] || 0;
+                    const norm = raw / globalMax[act.key];
+                    const weighted = norm * roleMult * s.activityWeights[act.key];
+                    breakdown[act.key] = { raw, norm, weighted };
+                    activityTotal += weighted;
+                }
+
+                const participatedCount = ['gvg', 'kvm', 'arcade', 'otherworld'].filter(k => entry.participated[k]).length;
+                const participationBonus = (participatedCount / 4) * s.participationFactor * roleMult;
+                const mgmtBonus = Math.min(entry.managementBonus || 0, s.maxMgmt);
+
+                const weeks = playerWeeks(p);
+                const loyaltyBonus = Math.min(weeks * s.loyaltyIncrement, s.maxLoyaltyBonus);
+                const loyaltyMult = 1 + loyaltyBonus;
+                const baseScore = (activityTotal + participationBonus + mgmtBonus) * loyaltyMult;
+
+                const pastWeeks = STATE.weeks.filter(w => w.id !== week.id && w.distribution?.length);
+                let cumDeserved = 0, cumReceived = 0;
+                for (const pw of pastWeeks) {
+                    const d = pw.distribution.find(d => d.playerId === p.id);
+                    if (d) { cumDeserved += d.deservedProportion || 0; cumReceived += d.receivedProportion || 0; }
+                }
+                const deficitRaw = Math.max(0, cumDeserved - cumReceived);
+                const deficitBonus = deficitRaw * s.deficitWeight;
+                const finalScore = Math.max(0, baseScore + deficitBonus);
+
+                return {
+                    playerId: p.id, playerName: p.name, role: p.role, playerClass: p.class || '',
+                    roleMult, breakdown, activityTotal,
+                    participationBonus, participatedCount, mgmtBonus,
+                    loyaltyMult, loyaltyBonus, baseScore,
+                    deficitBonus, deficitRaw, cumDeserved, cumReceived, finalScore
+                };
+            });
+
+            // --- Step 3: per box-type proportional allocation using blended score ---
+            // For a box type tied to activity X:
+            //   blendedScore = blend * activityWeightedScore(X) + (1-blend) * finalScore (normalized)
+            // For an unlinked box type:
+            //   blendedScore = finalScore
+            // This means support players don't get zero from KvM boxes — their
+            // global score (which already has role multiplier) acts as a floor.
+
+            const blend = s.blendRatio ?? 0.7;
+            const totalGlobalScore = results.reduce((s, r) => s + r.finalScore, 0);
+
+            // Allocate boxes per type, store result per player per type
+            const perTypeAllocs = {}; // btId -> array of { playerId, count }
+
+            for (const bt of STATE.boxTypes) {
+                if (!boxCounts[bt.id]) {
+                    perTypeAllocs[bt.id] = results.map(r => ({ playerId: r.playerId, count: 0 }));
+                    continue;
+                }
+                const typeBoxes = boxCounts[bt.id];
+
+                // Compute each player's blended score for this box type
+                const scores = results.map(r => {
+                    let score;
+                    if (bt.activityKey) {
+                        // Activity-specific component: just the weighted score for that activity
+                        // (already includes role mult and activity weight)
+                        const actScore = r.breakdown[bt.activityKey]?.weighted || 0;
+                        // Normalise global score to same scale as actScore by finding max actScore
+                        const maxActScore = Math.max(...results.map(r2 => r2.breakdown[bt.activityKey]?.weighted || 0), 0.001);
+                        const normGlobal = totalGlobalScore > 0 ? r.finalScore / totalGlobalScore : 0;
+                        // normActScore in [0..1], normGlobal in [0..1] — blend them
+                        const normAct = actScore / maxActScore;
+                        score = blend * normAct + (1 - blend) * normGlobal;
+                    } else {
+                        // No activity link — purely global score
+                        score = totalGlobalScore > 0 ? r.finalScore / totalGlobalScore : 0;
+                    }
+                    return { playerId: r.playerId, score: Math.max(0, score) };
+                });
+
+                const totalTypeScore = scores.reduce((s, x) => s + x.score, 0);
+                const withAlloc = scores.map(x => {
+                    const proportion = totalTypeScore > 0 ? x.score / totalTypeScore : 0;
+                    const exact = proportion * typeBoxes;
+                    return { playerId: x.playerId, proportion, exact, floor: Math.floor(exact), frac: exact % 1 };
+                });
+
+                // Distribute remainder to highest fractional parts
+                let allocated = withAlloc.reduce((s, a) => s + a.floor, 0);
+                let rem = typeBoxes - allocated;
+                withAlloc.sort((a, b) => b.frac - a.frac);
+                for (let i = 0; i < rem && i < withAlloc.length; i++) withAlloc[i].floor += 1;
+
+                perTypeAllocs[bt.id] = withAlloc.map(a => ({ playerId: a.playerId, count: a.floor, proportion: a.proportion }));
+            }
+
+            // --- Step 4: merge per-type allocations back onto player result objects ---
+            const allocs = results.map(r => {
+                const proportion = totalGlobalScore > 0 ? r.finalScore / totalGlobalScore : 0;
+                const boxBreakdown = {}; // btId -> count
+                let totalBoxesForPlayer = 0;
+                for (const bt of STATE.boxTypes) {
+                    const alloc = perTypeAllocs[bt.id]?.find(a => a.playerId === r.playerId);
+                    boxBreakdown[bt.id] = alloc?.count || 0;
+                    totalBoxesForPlayer += boxBreakdown[bt.id];
+                }
+                return { ...r, proportion, boxBreakdown, totalBoxes: totalBoxesForPlayer };
+            });
+
+            allocs.sort((a, b) => b.finalScore - a.finalScore);
+            renderResults(allocs, totalBoxes, week);
+        }
+
+        function renderResults(allocs, totalBoxes, week) {
+            const s = STATE.settings;
+            window._tipData = window._tipData || {};
+            registerHeaderTips();
+
+            const tbody = document.getElementById('results-tbody');
+            const ACT_KEYS = ['gvg', 'kvm', 'arcade', 'otherworld', 'orders'];
+            const ACT_LABELS = { gvg: 'GvG', kvm: 'KvM', arcade: 'Аркада', otherworld: 'Иномир', orders: 'Приказы' };
+
+            tbody.innerHTML = allocs.map((r, i) => {
+                const bd = r.breakdown;
+                const pct = (r.proportion * 100).toFixed(1);
+
+                // Activity score cells with tooltips
+                const actCells = ACT_KEYS.map(k => {
+                    const b = bd[k];
+                    const gmax = Math.max(...allocs.map(a => a.breakdown[k]?.raw || 0), 0.001);
+                    const tipId = `cell-${r.playerId}-${k}`;
+                    const roleName = getRole(r.role).name;
+                    window._tipData[tipId] = buildTipActivity(ACT_LABELS[k], b.raw, parseFloat(gmax.toFixed(1)), b.norm, r.roleMult, roleName, s.activityWeights[k], b.weighted);
+                    return `<td class="score-breakdown" data-tip-id="${tipId}">${b.raw} <span style="color:var(--text-dim)">(×${b.norm.toFixed(2)}<span class="tip-arrow">→</span>${b.weighted.toFixed(2)})</span></td>`;
+                }).join('');
+
+                // Participation + loyalty + deficit tooltips
+                const partTipId = `cell-${r.playerId}-part`;
+                const roleName = getRole(r.role).name;
+                window._tipData[partTipId] = buildTipParticipation(r.participatedCount, 4, s.participationFactor, r.roleMult, roleName, r.participationBonus);
+                const loyTipId = `cell-${r.playerId}-loy`;
+                const playerObj = STATE.players.find(p => p.id === r.playerId);
+                window._tipData[loyTipId] = buildTipLoyalty(playerWeeks(playerObj || {}), s.loyaltyIncrement, r.loyaltyMult - 1, r.loyaltyMult);
+                const defTipId = `cell-${r.playerId}-def`;
+                window._tipData[defTipId] = buildTipDeficit(r.cumDeserved || 0, r.cumReceived || 0, r.deficitRaw, s.deficitWeight, r.deficitBonus);
+                const defTxt = r.deficitBonus > 0.001 ? `+${r.deficitBonus.toFixed(2)} <span style="font-size:0.72rem;color:var(--text-dim)">(Δ${r.deficitRaw.toFixed(2)})</span>` : '—';
+                const finalTipId = `cell-${r.playerId}-final`;
+                window._tipData[finalTipId] = buildTipFinalScore(r, s, totalBoxes);
+
+                // Per-type box cells
+                const boxTypeCells = STATE.boxTypes.map(bt => {
+                    const count = r.boxBreakdown?.[bt.id] || 0;
+                    // Tooltip explaining this specific box allocation
+                    const btTipId = `cell-${r.playerId}-bt-${bt.id}`;
+                    const actLabel = bt.activityKey ? (ACTIVITIES.find(a => a.key === bt.activityKey)?.label || bt.activityKey) : 'общий счёт';
+                    const actScore = bt.activityKey ? (r.breakdown[bt.activityKey]?.weighted || 0).toFixed(3) : '—';
+                    window._tipData[btTipId] = `
+        <div class="tip-title">${esc(bt.name)}</div>
+        <div class="tip-row"><span class="tip-label">Привязка</span><span class="tip-val">${esc(actLabel)}</span></div>
+        ${bt.activityKey ? `<div class="tip-row"><span class="tip-label">Очки ${esc(actLabel)}</span><span class="tip-val">${actScore}</span></div>` : ''}
+        <div class="tip-row"><span class="tip-label">Blend (${Math.round((s.blendRatio ?? 0.7) * 100)}%)</span><span class="tip-val">${bt.activityKey ? 'акт. + глоб.' : 'глобальный'}</span></div>
+        <div class="tip-row"><span class="tip-label">Итог</span><span class="tip-val gold">${count} 📦</span></div>
+        <div class="tip-formula">Смешанный счёт = blend × норм_акт + (1-blend) × норм_глоб</div>`;
+                    return `<td class="box-count" data-tip-id="${btTipId}" style="color:${bt.color}">${count || '—'}</td>`;
+                }).join('');
+
+                return `<tr>
+      <td>${i + 1}</td>
+      <td><b>${esc(r.playerName)}</b><br><span style="font-size:0.76rem;color:var(--text-dim)">${esc(r.playerClass)}</span></td>
+      <td>${roleBadgeHTML(r.role)}</td>
+      ${actCells}
+      <td class="score-breakdown" data-tip-id="${partTipId}">${r.participatedCount}/4 <span class="tip-arrow">→</span> <span style="color:var(--gold)">${r.participationBonus.toFixed(2)}</span></td>
+      <td class="score-breakdown">${r.mgmtBonus > 0 ? `+${r.mgmtBonus.toFixed(1)}` : '—'}</td>
+      <td class="score-breakdown" data-tip-id="${loyTipId}">×${r.loyaltyMult.toFixed(2)}</td>
+      <td class="score-breakdown" data-tip-id="${defTipId}">${defTxt}</td>
+      <td style="color:var(--gold-light);font-weight:600" data-tip-id="${finalTipId}">${r.finalScore.toFixed(3)}</td>
+      <td style="color:var(--text-dim)">${pct}%</td>
+      ${boxTypeCells}
+      <td class="box-count" style="background:rgba(201,162,39,0.08)">${r.totalBoxes}</td>
+    </tr>`;
+            }).join('');
+
+            // Build dynamic header
+            const thead = document.getElementById('results-thead-tr');
+            if (thead) {
+                const boxTypeHeaders = STATE.boxTypes.map(bt => {
+                    const tipId = `hdr-bt-${bt.id}`;
+                    const actLabel = bt.activityKey ? (ACTIVITIES.find(a => a.key === bt.activityKey)?.label || bt.activityKey) : 'общий счёт';
+                    window._tipData[tipId] = `<div class="tip-title">📦 ${esc(bt.name)}</div><div style="font-size:0.8rem;color:var(--text);margin-top:4px;line-height:1.5">Привязка: <b>${esc(actLabel)}</b>. Распределяется по смешанному счёту: ${Math.round((s.blendRatio ?? 0.7) * 100)}% очки активности + ${100 - Math.round((s.blendRatio ?? 0.7) * 100)}% общий вклад.</div>`;
+                    return `<th style="color:${bt.color}">📦 ${esc(bt.name)} <span class="col-info" data-tip-id="${tipId}">i</span></th>`;
+                }).join('');
+                thead.innerHTML = `
+      <th>#</th><th>Игрок</th><th>Роль</th>
+      <th>GvG <span class="col-info" data-tip-id="hdr-gvg">i</span></th>
+      <th>KvM <span class="col-info" data-tip-id="hdr-kvm">i</span></th>
+      <th>Аркада <span class="col-info" data-tip-id="hdr-arcade">i</span></th>
+      <th>Иномир <span class="col-info" data-tip-id="hdr-otherworld">i</span></th>
+      <th>Приказы <span class="col-info" data-tip-id="hdr-orders">i</span></th>
+      <th>Участие <span class="col-info" data-tip-id="hdr-participation">i</span></th>
+      <th>Упр.</th>
+      <th>Лояльность <span class="col-info" data-tip-id="hdr-loyalty">i</span></th>
+      <th>Дефицит <span class="col-info" data-tip-id="hdr-deficit">i</span></th>
+      <th>Итого <span class="col-info" data-tip-id="hdr-final">i</span></th>
+      <th>Доля %</th>
+      ${boxTypeHeaders}
+      <th>📦 Всего</th>`;
+            }
+
+            document.getElementById('res-total-boxes').textContent = totalBoxes;
+            document.getElementById('distribution-results').style.display = 'block';
+
+            window._lastAllocs = allocs;
+            window._lastWeekId = week.id;
+            window._lastTotalBoxes = totalBoxes;
+        }
+
+        function saveDistribution() {
+            if (!window._lastAllocs) return;
+            const week = STATE.weeks.find(w => w.id === window._lastWeekId);
+            if (!week) return;
+            const totalScore = window._lastAllocs.reduce((s, a) => s + a.finalScore, 0);
+            week.distribution = window._lastAllocs.map(a => ({
+                playerId: a.playerId,
+                playerName: a.playerName,
+                role: a.role,
+                boxes: a.totalBoxes,           // total for deficit tracking
+                boxBreakdown: a.boxBreakdown,  // per-type breakdown for display
+                deservedProportion: totalScore > 0 ? a.finalScore / totalScore : 0,
+                receivedProportion: window._lastTotalBoxes > 0 ? a.totalBoxes / window._lastTotalBoxes : 0,
+                finalScore: a.finalScore
+            }));
+            save();
+            alert('✓ Распределение сохранено в историю!');
+        }
+
+        // ============================
+        // HISTORY
+        // ============================
+        function renderHistory() {
+            const savedWeeks = STATE.weeks.filter(w => w.distribution && w.distribution.length);
+            const container = document.getElementById('history-list');
+            const empty = document.getElementById('history-empty');
+            if (!savedWeeks.length) { container.innerHTML = ''; empty.style.display = 'block'; return; }
+            empty.style.display = 'none';
+            container.innerHTML = savedWeeks.slice().reverse().map(w => {
+                const totalBoxes = w.distribution.reduce((s, d) => s + d.boxes, 0);
+                const topPlayer = [...w.distribution].sort((a, b) => b.boxes - a.boxes)[0];
+                return `<div class="hist-item" onclick="showHistDetail(${w.id})">
+      <div>
+        <div class="hist-label">${esc(w.label)}</div>
+        <div class="hist-meta">Участников: ${w.distribution.length} · Коробок: ${totalBoxes} · Лучший: ${esc(topPlayer?.playerName || '—')} (${topPlayer?.boxes || 0} 📦)</div>
+      </div>
+      <span style="color:var(--gold-dim);font-size:1.2rem">›</span>
+    </div>`;
+            }).join('');
+        }
+
+        function showHistDetail(weekId) {
+            const week = STATE.weeks.find(w => w.id === weekId);
+            if (!week || !week.distribution) return;
+            const sorted = [...week.distribution].sort((a, b) => b.boxes - a.boxes);
+            const totalBoxes = sorted.reduce((s, d) => s + d.boxes, 0);
+            document.getElementById('histModalTitle').textContent = week.label;
+
+            // Build per-type columns for header
+            const btHeaders = STATE.boxTypes.map(bt =>
+                `<th style="color:${bt.color}">📦 ${esc(bt.name)}</th>`
+            ).join('');
+
+            const rows = sorted.map((d, i) => {
+                const btCells = STATE.boxTypes.map(bt => {
+                    const count = d.boxBreakdown?.[bt.id] ?? '—';
+                    return `<td style="color:${bt.color};font-family:'Cinzel',serif">${count}</td>`;
+                }).join('');
+                return `<tr>
+      <td>${i + 1}</td>
+      <td><b>${esc(d.playerName)}</b></td>
+      <td>${roleBadgeHTML(d.role)}</td>
+      <td>${d.finalScore?.toFixed(3) || '—'}</td>
+      <td>${((d.receivedProportion || 0) * 100).toFixed(1)}%</td>
+      ${btCells}
+      <td class="box-count">${d.boxes}</td>
+    </tr>`;
+            }).join('');
+
+            document.getElementById('histModalContent').innerHTML = `
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>#</th><th>Игрок</th><th>Роль</th><th>Итого очков</th><th>Доля</th>${btHeaders}<th>📦 Всего</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>
+    <div style="margin-top:12px;color:var(--text-dim);font-size:0.82rem">Всего коробок: <b style="color:var(--gold)">${totalBoxes}</b></div>`;
+            document.getElementById('historyModal').classList.add('open');
+        }
+
+        function closeHistModal() { document.getElementById('historyModal').classList.remove('open'); }
+
+        // ============================
+        // UTILS
+        // ============================
+        function esc(str) {
+            return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        // Close modals on overlay click
+        document.getElementById('playerModal').addEventListener('click', function (e) { if (e.target === this) closePlayerModal(); });
+        document.getElementById('historyModal').addEventListener('click', function (e) { if (e.target === this) closeHistModal(); });
+
+        // ============================
+        // BOX TYPES EDITOR
+        // ============================
+
+        function renderBoxTypesEditor() {
+            const container = document.getElementById('boxtypes-editor');
+            if (!container) return;
+            // Build the activity options list for the select dropdown
+            const actOptions = `<option value="">— без привязки —</option>` +
+                ACTIVITIES.filter(a => a.key !== 'orders').map(a =>
+                    `<option value="${a.key}">${a.label}</option>`
+                ).join('');
+
+            container.innerHTML = STATE.boxTypes.map(bt => `
+    <div class="role-editor-row" id="bter-${bt.id}">
+      <input type="color" value="${bt.color}" title="Цвет"
+             style="width:32px;height:32px;padding:2px;border:1px solid var(--border);background:none;cursor:pointer;flex-shrink:0"
+             onchange="updateBoxTypeField('${bt.id}','color',this.value)">
+      <input type="text" value="${esc(bt.name)}" placeholder="Название типа" style="flex:1;min-width:80px"
+             oninput="updateBoxTypeField('${bt.id}','name',this.value)">
+      <select style="width:140px" onchange="updateBoxTypeField('${bt.id}','activityKey',this.value||null)">
+        ${actOptions}
+      </select>
+      <button class="btn btn-danger btn-sm" onclick="deleteBoxType('${bt.id}')"
+              ${STATE.boxTypes.length <= 1 ? 'disabled' : ''}>✕</button>
+    </div>`).join('');
+
+            // Re-apply selected activity values (can't set in innerHTML directly for select)
+            STATE.boxTypes.forEach(bt => {
+                const sel = container.querySelector(`#bter-${bt.id} select`);
+                if (sel) sel.value = bt.activityKey || '';
+            });
+        }
+
+        function updateBoxTypeField(id, field, value) {
+            const bt = STATE.boxTypes.find(b => b.id === id);
+            if (!bt) return;
+            bt[field] = value;
+            save();
+            if (field === 'color' || field === 'name') renderBoxTypesEditor();
+        }
+
+        function addBoxType() {
+            STATE.boxTypes.push({ id: 'bt_' + genId(), name: 'Новый тип', activityKey: null, color: '#b0b0b0' });
+            save();
+            renderBoxTypesEditor();
+        }
+
+        function deleteBoxType(id) {
+            if (STATE.boxTypes.length <= 1) { alert('Нельзя удалить последний тип коробок'); return; }
+            if (!confirm('Удалить этот тип коробок?')) return;
+            STATE.boxTypes = STATE.boxTypes.filter(b => b.id !== id);
+            save();
+            renderBoxTypesEditor();
+        }
+        window._tipData = {};  // id → HTML string
+        let _tipTimer = null;
+        const _tipBox = () => document.getElementById('tip-box');
+
+        function tipShow(id, event) {
+            clearTimeout(_tipTimer);
+            const html = window._tipData[id];
+            if (!html) return;
+            _tipTimer = setTimeout(() => {
+                const box = _tipBox();
+                box.innerHTML = html;
+                box.classList.add('visible');
+                tipPosition(event);
+            }, 160);
+        }
+
+        function tipHide() {
+            clearTimeout(_tipTimer);
+            _tipBox().classList.remove('visible');
+        }
+
+        function tipPosition(e) {
+            const box = _tipBox();
+            const margin = 12;
+            const bw = box.offsetWidth || 300;
+            const bh = box.offsetHeight || 160;
+            let x = e.clientX + margin;
+            let y = e.clientY + margin;
+            if (x + bw > window.innerWidth - margin) x = e.clientX - bw - margin;
+            if (y + bh > window.innerHeight - margin) y = e.clientY - bh - margin;
+            box.style.left = Math.max(margin, x) + 'px';
+            box.style.top = Math.max(margin, y) + 'px';
+        }
+
+        // Wire up delegated events once
+        document.addEventListener('mouseover', e => {
+            const el = e.target.closest('[data-tip-id]');
+            if (el) tipShow(el.dataset.tipId, e);
+        });
+        document.addEventListener('mousemove', e => {
+            if (_tipBox().classList.contains('visible')) tipPosition(e);
+        });
+        document.addEventListener('mouseout', e => {
+            const el = e.target.closest('[data-tip-id]');
+            if (el && !el.contains(e.relatedTarget)) tipHide();
+        });
+
+        // Helper: build a tidy step-by-step tip HTML
+        function buildTipActivity(actLabel, raw, gmax, norm, roleMult, roleLabel, actWeight, weighted) {
+            const step1 = `${raw} ÷ ${gmax} = ${norm.toFixed(3)}`;
+            const step2 = `${norm.toFixed(3)} × ${roleMult.toFixed(2)} = ${(norm * roleMult).toFixed(3)}`;
+            const step3 = `${(norm * roleMult).toFixed(3)} × ${actWeight.toFixed(1)} = ${weighted.toFixed(3)}`;
+            return `
+    <div class="tip-title">${actLabel} — разбивка очков</div>
+    <div class="tip-row"><span class="tip-label">Сырой счёт</span><span class="tip-val">${raw}</span></div>
+    <div class="tip-row"><span class="tip-label">Макс. в неделе</span><span class="tip-val">${gmax}</span></div>
+    <div class="tip-row"><span class="tip-label">Нормализация</span><span class="tip-val">${step1}</span></div>
+    <div class="tip-row"><span class="tip-label">Роль (${roleLabel} ×${roleMult.toFixed(2)})</span><span class="tip-val">${step2}</span></div>
+    <div class="tip-row"><span class="tip-label">Вес акт. ×${actWeight.toFixed(1)}</span><span class="tip-val gold">${step3}</span></div>
+    <div class="tip-formula">Формула: (счёт ÷ макс) × роль × вес</div>`;
+        }
+
+        function buildTipParticipation(count, max, factor, roleMult, roleLabel, bonus) {
+            return `
+    <div class="tip-title">Бонус за участие</div>
+    <div class="tip-row"><span class="tip-label">Активностей посещено</span><span class="tip-val">${count} из ${max}</span></div>
+    <div class="tip-row"><span class="tip-label">Коэф. участия</span><span class="tip-val">${(factor * 100).toFixed(0)}%</span></div>
+    <div class="tip-row"><span class="tip-label">Роль (${roleLabel} ×${roleMult.toFixed(2)})</span><span class="tip-val">${roleMult.toFixed(2)}</span></div>
+    <div class="tip-row"><span class="tip-label">Итог</span><span class="tip-val gold">${bonus.toFixed(3)}</span></div>
+    <div class="tip-formula">Формула: (посещено ÷ всего) × коэф × роль</div>`;
+        }
+
+        function buildTipLoyalty(weeks, increment, loyaltyBonus, mult) {
+            return `
+    <div class="tip-title">Бонус лояльности</div>
+    <div class="tip-row"><span class="tip-label">Недель в гильдии</span><span class="tip-val">${weeks}</span></div>
+    <div class="tip-row"><span class="tip-label">Прирост за неделю</span><span class="tip-val">${(increment * 100).toFixed(1)}%</span></div>
+    <div class="tip-row"><span class="tip-label">Накоплено</span><span class="tip-val">${(loyaltyBonus * 100).toFixed(1)}%</span></div>
+    <div class="tip-row"><span class="tip-label">Итоговый множитель</span><span class="tip-val gold">×${mult.toFixed(3)}</span></div>
+    <div class="tip-formula">Формула: 1 + min(недели × прирост, макс)</div>`;
+        }
+
+        function buildTipDeficit(cumDeserved, cumReceived, raw, weight, bonus) {
+            const sign = bonus > 0.001 ? '+' : '';
+            return `
+    <div class="tip-title">Поправка дефицита</div>
+    <div class="tip-row"><span class="tip-label">Заслужено (∑ прошлых)</span><span class="tip-val">${cumDeserved.toFixed(3)}</span></div>
+    <div class="tip-row"><span class="tip-label">Получено (∑ прошлых)</span><span class="tip-val">${cumReceived.toFixed(3)}</span></div>
+    <div class="tip-row"><span class="tip-label">Дефицит Δ</span><span class="tip-val">${raw.toFixed(3)}</span></div>
+    <div class="tip-row"><span class="tip-label">Вес дефицита</span><span class="tip-val">×${weight.toFixed(2)}</span></div>
+    <div class="tip-row"><span class="tip-label">Поправка</span><span class="tip-val gold">${sign}${bonus.toFixed(3)}</span></div>
+    <div class="tip-formula">Накапливается между неделями: если игрок стабильно получает меньше заслуженного — система добавляет бонус.</div>`;
+        }
+
+        function buildTipFinalScore(r, s, totalBoxes) {
+            const proportion = r.proportion;
+            const exactBoxes = (proportion * totalBoxes).toFixed(2);
+
+            // Build activity lines sorted by contribution
+            const actLines = ACTIVITIES.map(act => {
+                const b = r.breakdown[act.key];
+                if (!b || b.weighted < 0.0001) return null;
+                return `  ${act.key.padEnd(11)} ${b.weighted.toFixed(3)}`;
+            }).filter(Boolean).join('\n');
+
+            const roleName = getRole(r.role).name;
+            const weeks = playerWeeks(STATE.players.find(p => p.id === r.playerId) || {});
+            const loyPct = Math.round((r.loyaltyMult - 1) * 100);
+            const defLine = r.deficitBonus > 0.001
+                ? `\n  дефицит × ${s.deficitWeight.toFixed(2)}  +${r.deficitBonus.toFixed(3)}`
+                : '';
+
+            const html = `
+    <div class="tip-title">Итоговый счёт — полный расчёт</div>
+    <pre style="font-family:monospace;font-size:0.76rem;color:var(--text);line-height:1.6;margin:0;white-space:pre-wrap">// 1. Взвешенные очки по активностям
+//    (норм × роль × вес_акт)
+${actLines || '  (нет очков)'}
+  ──────────────────────────
+  Σ активностей   ${r.activityTotal.toFixed(3)}
+
+// 2. Бонус участия
+//    (${r.participatedCount}/4 × ${Math.round(s.participationFactor * 100)}% × ×${r.roleMult.toFixed(2)} роль)
+  участие         +${r.participationBonus.toFixed(3)}
+
+// 3. Управленческий бонус
+  управление      +${r.mgmtBonus.toFixed(1)}
+  ──────────────────────────
+  до лояльности   ${(r.activityTotal + r.participationBonus + r.mgmtBonus).toFixed(3)}
+
+// 4. Лояльность ×${r.loyaltyMult.toFixed(3)}
+//    (${weeks} нед × ${(s.loyaltyIncrement * 100).toFixed(1)}% = +${loyPct}%)
+  × ${r.loyaltyMult.toFixed(3)} ──────────────
+  базовый счёт    ${r.baseScore.toFixed(3)}
+${defLine}
+// 5. Итого → доля пула
+  ══════════════════════════
+  финСчет      ${r.finalScore.toFixed(3)}
+  доля            ${(proportion * 100).toFixed(2)}%
+  точных коробок  ${exactBoxes}</pre>`;
+            return html;
+        }
+
+        // Header tooltips (static, registered once)
+        const ACT_HEADER_TIPS = {
+            gvg: { label: 'GvG — Война гильдий', formula: 'Очки GvG нормализуются по лучшему результату недели, затем умножаются на ролевой коэф. и вес активности.' },
+            kvm: { label: 'KvM — PvP пати', formula: 'Очки KvM нормализуются по лучшему результату недели. Саппорты получают ролевой бонус, компенсируя меньший личный счёт.' },
+            arcade: { label: 'Аркада (Abyss Arcade)', formula: 'Нормализованные очки аркады, умноженные на ролевой коэф. и вес.' },
+            otherworld: { label: 'Иномир (Other World)', formula: 'Нормализованные очки иномира, умноженные на ролевой коэф. и вес.' },
+            orders: { label: 'Приказы (Orders)', formula: 'Приказы — вспомогательная активность с минимальным весом. Участие в них помогает открывать иномир для всей гильдии.' },
+        };
+
+        function registerHeaderTips() {
+            for (const [k, v] of Object.entries(ACT_HEADER_TIPS)) {
+                window._tipData[`hdr-${k}`] = `
+      <div class="tip-title">${v.label}</div>
+      <div class="tip-row"><span class="tip-label">Формула</span></div>
+      <div style="font-size:0.8rem;color:var(--text);margin-top:4px;line-height:1.5">${v.formula}</div>
+      <div class="tip-formula">Итог = (счёт ÷ макс_недели) × роль × вес_активности</div>`;
+            }
+            window._tipData['hdr-participation'] = `
+    <div class="tip-title">Бонус за участие</div>
+    <div style="font-size:0.8rem;color:var(--text);margin-top:4px;line-height:1.5">Награждает за сам факт присутствия на активностях, независимо от набранных очков. Особенно важен для Саппортов и Танков. Чем больше активностей посещено — тем выше бонус.</div>
+    <div class="tip-formula">Формула: (посещено ÷ 4) × коэф_участия × ролевой_множитель</div>`;
+            window._tipData['hdr-mgmt'] = `
+    <div class="tip-title">Управленческий бонус</div>
+    <div style="font-size:0.8rem;color:var(--text);margin-top:4px;line-height:1.5">Ручной бонус для лидеров КП/рейда, авторов гайдов и игроков, выполняющих дополнительную работу для гильдии. Вводится вручную при заполнении недели.</div>`;
+            window._tipData['hdr-loyalty'] = `
+    <div class="tip-title">Лояльность</div>
+    <div style="font-size:0.8rem;color:var(--text);margin-top:4px;line-height:1.5">Множитель, накапливающийся за каждую неделю в гильдии. Мотивирует прокачанных игроков оставаться, а не уходить после получения коробок.</div>
+    <div class="tip-formula">Формула: ×(1 + min(недели × прирост, макс))</div>`;
+            window._tipData['hdr-deficit'] = `
+    <div class="tip-title">Поправка дефицита</div>
+    <div style="font-size:0.8rem;color:var(--text);margin-top:4px;line-height:1.5">Отслеживает разницу между заслуженной и реально полученной долей коробок за все прошлые недели. Если игрок стабильно недополучал — система добавляет ему бонус к счёту.</div>
+    <div class="tip-formula">Формула: Δ = (∑заслужено − ∑получено) × вес_дефицита</div>`;
+            window._tipData['hdr-final'] = `
+    <div class="tip-title">Итоговый счёт</div>
+    <div style="font-size:0.8rem;color:var(--text);margin-top:4px;line-height:1.5">Сумма всех взвешенных очков активностей + бонус участия + упр. бонус, умноженная на лояльность, плюс поправка дефицита. На основе этого числа рассчитывается доля коробок.</div>`;
+        }
+
+        // ============================
+        // THEME TOGGLE
+        // ============================
+        function toggleTheme() {
+            const isLight = document.documentElement.classList.toggle('light');
+            document.getElementById('theme-label').textContent = isLight ? 'Тёмная' : 'Светлая';
+            try { localStorage.setItem('roxTheme', isLight ? 'light' : 'dark'); } catch (e) { }
+        }
+        function applyTheme() {
+            try {
+                const saved = localStorage.getItem('roxTheme');
+                if (saved === 'light') {
+                    document.documentElement.classList.add('light');
+                    document.getElementById('theme-label').textContent = 'Тёмная';
+                }
+            } catch (e) { }
+        }
+
+        // ============================
+        // INIT
+        // ============================
+        load();
+        applyTheme();
+        loadSettingsUI();
+        registerHeaderTips();
+        document.getElementById('guildNameDisplay').textContent = STATE.guild.name;
+        renderPlayers();
+    </script>
+    <!-- TOOLTIP -->
+    <div id="tip-box"></div>
+
+</body>
+
+</html>
