@@ -1148,7 +1148,7 @@
                 const saved = JSON.parse(raw);
                 STATE = saved;
 
-                // ── MIGRATION: ensure boxTypes array exists ──
+                // ensure boxTypes array exists ──
                 if (!STATE.boxTypes || !Array.isArray(STATE.boxTypes) || STATE.boxTypes.length === 0) {
                     // Migrate from old flat boxCounts on weeks — reconstruct default types
                     STATE.boxTypes = DEFAULT_BOX_TYPES.map(b => ({ ...b }));
@@ -1156,7 +1156,7 @@
                 // Ensure blendRatio setting exists
                 if (STATE.settings.blendRatio === undefined) STATE.settings.blendRatio = 0.7;
 
-                // ── MIGRATION: old saves had settings.roleMultipliers instead of STATE.roles ──
+                // old saves had settings.roleMultipliers instead of STATE.roles ──
                 if (!STATE.roles || !Array.isArray(STATE.roles) || STATE.roles.length === 0) {
                     const oldMult = STATE.settings?.roleMultipliers || {};
                     STATE.roles = DEFAULT_ROLES.map(r => {
@@ -1172,7 +1172,7 @@
                 // Clean up legacy key if present
                 if (STATE.settings?.roleMultipliers) delete STATE.settings.roleMultipliers;
 
-                // ── MIGRATION: players with old string role like "DPS" → match to role id ──
+                // players with old string role like "DPS" → match to role id ──
                 STATE.players.forEach(p => {
                     if (p.role && !p.role.startsWith('role_')) {
                         const match = STATE.roles.find(r => r.name === p.role || r.id === p.role);
@@ -1180,7 +1180,7 @@
                     }
                 });
 
-                // ── MIGRATION: players with numeric p.weeks → approximate joinDate ──
+                // players with numeric p.weeks → approximate joinDate ──
                 STATE.players.forEach(p => {
                     if (!p.joinDate && p.weeks !== undefined) {
                         // Backfill: approximate join date = now minus weeks * 7 days
