@@ -9,6 +9,7 @@
         href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&display=swap"
         rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.5.0/lz-string.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
     <style>
         :root {
             --bg: #0b0e15;
@@ -644,6 +645,105 @@
             border-color: var(--gold-dim);
         }
 
+        /* ANALYTICS — chart metric toggle */
+        .chart-metric-btn {
+            background: var(--bg3);
+            border: none;
+            color: var(--text-dim);
+            font-family: 'Cinzel', serif;
+            font-size: 0.72rem;
+            letter-spacing: 0.05em;
+            padding: 6px 14px;
+            cursor: pointer;
+            transition: background 0.18s, color 0.18s;
+        }
+
+        .chart-metric-btn.active {
+            background: var(--gold-dim);
+            color: var(--bg);
+        }
+
+        .chart-metric-btn:hover:not(.active) {
+            color: var(--text-bright);
+        }
+
+        /* ANALYTICS — player selector pills */
+        .player-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 4px 10px;
+            border: 1px solid var(--border);
+            background: var(--bg3);
+            color: var(--text-dim);
+            font-size: 0.78rem;
+            cursor: pointer;
+            transition: border-color 0.15s, color 0.15s, background 0.15s;
+            user-select: none;
+        }
+
+        .player-pill.active {
+            background: var(--bg2);
+            color: var(--text-bright);
+        }
+
+        .player-pill .pill-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        /* ANALYTICS — achievement cards grid */
+        .achievements-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 14px;
+        }
+
+        .achievement-card {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            padding: 14px 16px;
+            transition: border-color 0.18s;
+        }
+
+        .achievement-card:hover {
+            border-color: var(--gold-dim);
+        }
+
+        .achievement-card-name {
+            font-family: 'Cinzel', serif;
+            font-size: 0.9rem;
+            color: var(--text-bright);
+            margin-bottom: 6px;
+        }
+
+        .achievement-card-role {
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            margin-bottom: 10px;
+        }
+
+        .achievement-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 3px 8px;
+            font-size: 0.72rem;
+            font-family: 'Cinzel', serif;
+            letter-spacing: 0.04em;
+            border: 1px solid;
+            margin: 3px 3px 3px 0;
+            transition: opacity 0.15s;
+        }
+
+        .achievement-card-empty {
+            font-size: 0.78rem;
+            color: var(--text-dim);
+            font-style: italic;
+        }
+
         /* TOOLTIPS */
         #tip-box {
             position: fixed;
@@ -776,6 +876,7 @@
         <button class="tab-btn" onclick="switchTab('players')">👥 Участники</button>
         <button class="tab-btn" onclick="switchTab('weekly')">📊 Неделя</button>
         <button class="tab-btn" onclick="switchTab('distribution')">📦 Распределение</button>
+        <button class="tab-btn" onclick="switchTab('analytics')">📈 Аналитика</button>
         <button class="tab-btn" onclick="switchTab('history')">📜 История</button>
     </div>
 
@@ -1034,7 +1135,63 @@
             </div>
         </div>
 
-        <!-- ===================== TAB: HISTORY ===================== -->
+        <!-- ===================== TAB: ANALYTICS ===================== -->
+        <div class="panel" id="tab-analytics">
+
+            <div id="analytics-empty" class="empty-state" style="display:none">
+                Нет сохранённых недель. Рассчитайте и сохраните хотя бы одно распределение, чтобы увидеть аналитику.
+            </div>
+
+            <div id="analytics-content">
+
+                <!-- ── Chart section ── -->
+                <div class="section-title" style="margin-bottom:4px">Динамика по неделям</div>
+                <div class="tip" style="margin-bottom:16px">
+                    Выберите метрику и игроков которых хотите сравнить. Пустые недели (без сохранённого распределения)
+                    пропускаются.
+                </div>
+
+                <!-- Controls row -->
+                <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:16px">
+                    <div style="display:flex;gap:0;border:1px solid var(--border);overflow:hidden">
+                        <button id="chart-metric-pct" class="chart-metric-btn active"
+                            onclick="setChartMetric('pct')">Доля %</button>
+                        <button id="chart-metric-boxes" class="chart-metric-btn"
+                            onclick="setChartMetric('boxes')">Коробки</button>
+                    </div>
+                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:0.85rem">
+                        <input type="checkbox" id="chart-show-avg" onchange="refreshChart()" checked>
+                        Показать среднее
+                    </label>
+                    <button class="btn btn-outline btn-sm" onclick="selectAllChartPlayers(true)">Все</button>
+                    <button class="btn btn-outline btn-sm" onclick="selectAllChartPlayers(false)">Никого</button>
+                </div>
+
+                <!-- Player selector pills -->
+                <div id="chart-player-pills" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:18px"></div>
+
+                <!-- Chart canvas wrapper -->
+                <div
+                    style="position:relative;background:var(--bg2);border:1px solid var(--border);padding:18px;margin-bottom:32px">
+                    <canvas id="analytics-chart" height="110"></canvas>
+                    <div id="chart-no-data" style="display:none;position:absolute;inset:0;display:none;align-items:center;
+           justify-content:center;color:var(--text-dim);font-style:italic;font-size:0.9rem">
+                        Недостаточно данных для графика
+                    </div>
+                </div>
+
+                <!-- ── Achievements section ── -->
+                <div class="section-title" style="margin-bottom:4px">Достижения участников</div>
+                <div class="tip" style="margin-bottom:16px">
+                    Достижения вычисляются по всей сохранённой истории. Они не влияют на алгоритм распределения — только
+                    отражают реальный вклад.
+                </div>
+                <div id="achievements-grid"></div>
+
+            </div>
+        </div>
+
+
         <div class="panel" id="tab-history">
             <div class="section-title">История распределений</div>
             <div id="history-list"></div>
@@ -1194,7 +1351,7 @@
                 const saved = JSON.parse(raw);
                 STATE = saved;
 
-                // ensure boxTypes array exists
+                // ── MIGRATION: ensure boxTypes array exists ──
                 if (!STATE.boxTypes || !Array.isArray(STATE.boxTypes) || STATE.boxTypes.length === 0) {
                     // Migrate from old flat boxCounts on weeks — reconstruct default types
                     STATE.boxTypes = DEFAULT_BOX_TYPES.map(b => ({ ...b }));
@@ -1202,7 +1359,7 @@
                 // Ensure blendRatio setting exists
                 if (STATE.settings.blendRatio === undefined) STATE.settings.blendRatio = 0.7;
 
-                // old saves had settings.roleMultipliers instead of STATE.roles
+                // ── MIGRATION: old saves had settings.roleMultipliers instead of STATE.roles ──
                 if (!STATE.roles || !Array.isArray(STATE.roles) || STATE.roles.length === 0) {
                     const oldMult = STATE.settings?.roleMultipliers || {};
                     STATE.roles = DEFAULT_ROLES.map(r => {
@@ -1218,7 +1375,7 @@
                 // Clean up legacy key if present
                 if (STATE.settings?.roleMultipliers) delete STATE.settings.roleMultipliers;
 
-                // players with old string role like "DPS" → match to role id
+                // ── MIGRATION: players with old string role like "DPS" → match to role id ──
                 STATE.players.forEach(p => {
                     if (p.role && !p.role.startsWith('role_')) {
                         const match = STATE.roles.find(r => r.name === p.role || r.id === p.role);
@@ -1226,7 +1383,7 @@
                     }
                 });
 
-                // players with numeric p.weeks → approximate joinDate
+                // ── MIGRATION: players with numeric p.weeks → approximate joinDate ──
                 STATE.players.forEach(p => {
                     if (!p.joinDate && p.weeks !== undefined) {
                         // Backfill: approximate join date = now minus weeks * 7 days
@@ -1267,6 +1424,7 @@
             if (name === 'weekly') renderWeeklyTab();
             if (name === 'distribution') renderDistributionTab();
             if (name === 'history') renderHistory();
+            if (name === 'analytics') renderAnalytics();
         }
 
         // ============================
@@ -2607,12 +2765,451 @@ exact = ${(r.proportion * 100).toFixed(2)}% × ${totalBoxes}
         }
 
         // ============================
+        // ANALYTICS
+        // ============================
+
+        // Palette for chart lines — cycles if more players than colours
+        const CHART_PALETTE = [
+            '#c9a227', '#e05252', '#52a0e0', '#52c87a', '#c952e0',
+            '#e09252', '#52e0d4', '#e0c252', '#9252e0', '#e05299'
+        ];
+
+        // State for the chart: which metric is active and which players are selected
+        let _chartMetric = 'pct';      // 'pct' | 'boxes'
+        let _chartSelected = new Set();  // playerIds currently shown
+        let _chartInstance = null;       // Chart.js instance — destroyed on rebuild
+
+        function setChartMetric(metric) {
+            _chartMetric = metric;
+            document.getElementById('chart-metric-pct').classList.toggle('active', metric === 'pct');
+            document.getElementById('chart-metric-boxes').classList.toggle('active', metric === 'boxes');
+            refreshChart();
+        }
+
+        function selectAllChartPlayers(all) {
+            const savedWeeks = STATE.weeks.filter(w => w.distribution?.length);
+            if (!savedWeeks.length) return;
+            // Collect the union of all player ids that appear in any saved distribution
+            const ids = new Set(savedWeeks.flatMap(w => w.distribution.map(d => d.playerId)));
+            if (all) { ids.forEach(id => _chartSelected.add(id)); }
+            else { _chartSelected.clear(); }
+            renderPlayerPills();
+            refreshChart();
+        }
+
+        // ── Entry point: called when switching to the Analytics tab ──
+        function renderAnalytics() {
+            const savedWeeks = STATE.weeks.filter(w => w.distribution?.length);
+            const empty = document.getElementById('analytics-empty');
+            const content = document.getElementById('analytics-content');
+
+            if (!savedWeeks.length) {
+                empty.style.display = 'block';
+                content.style.display = 'none';
+                return;
+            }
+            empty.style.display = 'none';
+            content.style.display = 'block';
+
+            // Seed selected players on first render: default to all active players
+            if (_chartSelected.size === 0) {
+                STATE.players.filter(p => p.active).forEach(p => _chartSelected.add(p.id));
+            }
+
+            renderPlayerPills();
+            refreshChart();
+            renderAchievementsSection();
+        }
+
+        // ── Renders the clickable pill selectors for the chart ──
+        function renderPlayerPills() {
+            const savedWeeks = STATE.weeks.filter(w => w.distribution?.length);
+            // Build the complete player list from history (includes inactive / deleted players)
+            const seenIds = new Set(savedWeeks.flatMap(w => w.distribution.map(d => d.playerId)));
+            const allPlayers = [...seenIds].map(id => {
+                const p = STATE.players.find(p => p.id === id);
+                // Fallback for players deleted after distribution was saved
+                const name = p?.name || savedWeeks
+                    .flatMap(w => w.distribution)
+                    .find(d => d.playerId === id)?.playerName || `#${id}`;
+                return { id, name, role: p?.role };
+            }).sort((a, b) => a.name.localeCompare(b.name));
+
+            const container = document.getElementById('chart-player-pills');
+            container.innerHTML = allPlayers.map((p, i) => {
+                const color = CHART_PALETTE[i % CHART_PALETTE.length];
+                const active = _chartSelected.has(p.id);
+                return `<div class="player-pill ${active ? 'active' : ''}"
+                 style="${active ? `border-color:${color};` : ''}"
+                 onclick="toggleChartPlayer(${p.id}, ${i})">
+      <span class="pill-dot" style="background:${active ? color : 'var(--border)'}"></span>
+      ${esc(p.name)}
+    </div>`;
+            }).join('');
+        }
+
+        function toggleChartPlayer(id, paletteIdx) {
+            if (_chartSelected.has(id)) _chartSelected.delete(id);
+            else _chartSelected.add(id);
+            renderPlayerPills();
+            refreshChart();
+        }
+
+        // ── Builds and refreshes the Chart.js instance ──
+        function refreshChart() {
+            const savedWeeks = STATE.weeks.filter(w => w.distribution?.length)
+                .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+            const canvas = document.getElementById('analytics-chart');
+            const noData = document.getElementById('chart-no-data');
+
+            // Destroy previous instance to avoid canvas reuse errors
+            if (_chartInstance) { _chartInstance.destroy(); _chartInstance = null; }
+
+            if (!savedWeeks.length || _chartSelected.size === 0) {
+                noData.style.display = 'flex'; return;
+            }
+            noData.style.display = 'none';
+
+            const labels = savedWeeks.map(w => w.label);
+
+            // Collect all unique players visible across selected set
+            const seenIds = new Set(savedWeeks.flatMap(w => w.distribution.map(d => d.playerId)));
+            const playerList = [...seenIds]
+                .map((id, i) => {
+                    const p = STATE.players.find(p => p.id === id);
+                    const name = p?.name || savedWeeks.flatMap(w => w.distribution).find(d => d.playerId === id)?.playerName || `#${id}`;
+                    return { id, name, colorIdx: i };
+                })
+                .sort((a, b) => a.name.localeCompare(b.name));
+
+            // Build one dataset per selected player
+            const datasets = playerList
+                .filter(pl => _chartSelected.has(pl.id))
+                .map(pl => {
+                    const color = CHART_PALETTE[pl.colorIdx % CHART_PALETTE.length];
+                    const data = savedWeeks.map(w => {
+                        const dist = w.distribution.find(d => d.playerId === pl.id);
+                        if (!dist) return null; // player absent that week → gap in line
+                        return _chartMetric === 'pct'
+                            ? parseFloat(((dist.receivedProportion || 0) * 100).toFixed(2))
+                            : dist.boxes;
+                    });
+                    return {
+                        label: pl.name,
+                        data,
+                        borderColor: color,
+                        backgroundColor: color + '22',
+                        pointBackgroundColor: color,
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                        borderWidth: 2,
+                        tension: 0.35,   // slight curve — more readable than straight lines
+                        spanGaps: false  // null values create gaps, not false zeros
+                    };
+                });
+
+            // Optional average line
+            if (document.getElementById('chart-show-avg')?.checked) {
+                const avgData = savedWeeks.map(w => {
+                    const vals = w.distribution.map(d =>
+                        _chartMetric === 'pct'
+                            ? (d.receivedProportion || 0) * 100
+                            : d.boxes
+                    );
+                    return vals.length ? parseFloat((vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(2)) : null;
+                });
+                datasets.push({
+                    label: '⌀ Среднее',
+                    data: avgData,
+                    borderColor: '#ffffff44',
+                    backgroundColor: 'transparent',
+                    borderDash: [6, 4],
+                    pointRadius: 0,
+                    borderWidth: 1.5,
+                    tension: 0.35,
+                    spanGaps: true
+                });
+            }
+
+            // Detect light theme so we can adapt Chart.js colours
+            const isLight = document.documentElement.classList.contains('light');
+            const gridClr = isLight ? 'rgba(0,0,0,0.07)' : 'rgba(255,255,255,0.06)';
+            const tickClr = isLight ? '#7a7060' : '#8a8070';
+            const legendClr = isLight ? '#2c2620' : '#d8cdb8';
+
+            _chartInstance = new Chart(canvas, {
+                type: 'line',
+                data: { labels, datasets },
+                options: {
+                    responsive: true,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                color: legendClr,
+                                font: { family: "'Crimson Pro', Georgia, serif", size: 13 },
+                                boxWidth: 12,
+                                padding: 16,
+                                usePointStyle: true,
+                                pointStyleWidth: 10
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: isLight ? '#ffffff' : '#111622',
+                            borderColor: '#c9a22766',
+                            borderWidth: 1,
+                            titleColor: '#c9a227',
+                            bodyColor: isLight ? '#2c2620' : '#d8cdb8',
+                            titleFont: { family: "'Cinzel', serif", size: 12 },
+                            bodyFont: { family: "'Crimson Pro', serif", size: 13 },
+                            padding: 12,
+                            callbacks: {
+                                label: ctx => {
+                                    const val = ctx.raw;
+                                    if (val === null) return `${ctx.dataset.label}: —`;
+                                    return _chartMetric === 'pct'
+                                        ? `${ctx.dataset.label}: ${val.toFixed(1)}%`
+                                        : `${ctx.dataset.label}: ${val} 📦`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { color: gridClr },
+                            ticks: {
+                                color: tickClr,
+                                font: { family: "'Crimson Pro', serif", size: 11 },
+                                maxRotation: 35
+                            }
+                        },
+                        y: {
+                            grid: { color: gridClr },
+                            ticks: {
+                                color: tickClr,
+                                font: { family: "'Crimson Pro', serif", size: 11 },
+                                callback: v => _chartMetric === 'pct' ? v + '%' : v + ' 📦'
+                            },
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        // ── Achievement definitions ──
+        // Each achievement has: id, emoji, label, color, description, and
+        // a test(playerHistory, player, allWeeks) -> boolean function.
+        // playerHistory is an array of { week, dist } pairs where this player appeared.
+        const ACHIEVEMENTS = [
+            {
+                id: 'iron_attendance',
+                emoji: '🛡',
+                label: 'Железное присутствие',
+                color: '#52c87a',
+                desc: '4 недели подряд с полным участием (все 4 активности)',
+                test: (hist) => {
+                    // Look at weekly entries for this player: need 4 consecutive full-participation weeks
+                    let streak = 0;
+                    for (const { week, playerId } of hist) {
+                        const entry = week.entries?.find(e => e.playerId === playerId);
+                        const count = entry
+                            ? ['gvg', 'kvm', 'arcade', 'otherworld'].filter(k => entry.participated?.[k]).length
+                            : 0;
+                        if (count === 4) { streak++; if (streak >= 4) return true; }
+                        else streak = 0;
+                    }
+                    return false;
+                }
+            },
+            {
+                id: 'guild_backbone',
+                emoji: '⚓',
+                label: 'Опора гильдии',
+                color: '#52a0e0',
+                desc: 'Нe-DPS роль и топ-3 по итоговому счёту хотя бы за 1 неделю',
+                test: (hist, player) => {
+                    const role = STATE.roles.find(r => r.id === player?.role);
+                    // "Not DPS" heuristic: multiplier > 1.0 (i.e. Support or Tank)
+                    if (!role || role.multiplier <= 1.0) return false;
+                    return hist.some(({ week }) => {
+                        const sorted = [...week.distribution].sort((a, b) => b.finalScore - a.finalScore);
+                        const rank = sorted.findIndex(d => d.playerId === hist[0]?.playerId);
+                        return rank >= 0 && rank < 3;
+                    });
+                }
+            },
+            {
+                id: 'veteran',
+                emoji: '⚔',
+                label: 'Ветеран',
+                color: '#c9a227',
+                desc: 'Более 12 недель в гильдии',
+                test: (hist, player) => playerWeeks(player || {}) >= 12
+            },
+            {
+                id: 'elder',
+                emoji: '👑',
+                label: 'Старожил',
+                color: '#e8c84a',
+                desc: 'Более 24 недель в гильдии',
+                test: (hist, player) => playerWeeks(player || {}) >= 24
+            },
+            {
+                id: 'steady',
+                emoji: '📊',
+                label: 'Стабильность',
+                color: '#c952e0',
+                desc: 'Доля не падала ниже общего среднего 4 недели подряд',
+                test: (hist, player, savedWeeks) => {
+                    // Compute overall average proportion per week
+                    let streak = 0;
+                    for (const { week, dist } of hist) {
+                        const avg = week.distribution.reduce((s, d) => s + (d.receivedProportion || 0), 0)
+                            / (week.distribution.length || 1);
+                        if ((dist.receivedProportion || 0) >= avg) { streak++; if (streak >= 4) return true; }
+                        else streak = 0;
+                    }
+                    return false;
+                }
+            },
+            {
+                id: 'rising_star',
+                emoji: '🌟',
+                label: 'Восходящая звезда',
+                color: '#e07a52',
+                desc: 'Доля росла 3 недели подряд',
+                test: (hist) => {
+                    let streak = 0;
+                    for (let i = 1; i < hist.length; i++) {
+                        const prev = hist[i - 1].dist.receivedProportion || 0;
+                        const curr = hist[i].dist.receivedProportion || 0;
+                        if (curr > prev) { streak++; if (streak >= 2) return true; } // 2 increments = 3 weeks
+                        else streak = 0;
+                    }
+                    return false;
+                }
+            },
+            {
+                id: 'manager',
+                emoji: '📋',
+                label: 'Кризисный менеджер',
+                color: '#e09252',
+                desc: 'Управленческий бонус в 3 или более неделях',
+                test: (hist, player) => {
+                    let count = 0;
+                    for (const { week, playerId } of hist) {
+                        const entry = week.entries?.find(e => e.playerId === playerId);
+                        if ((entry?.managementBonus || 0) > 0) count++;
+                    }
+                    return count >= 3;
+                }
+            },
+            {
+                id: 'marathoner',
+                emoji: '🏃',
+                label: 'Марафонец',
+                color: '#52e0d4',
+                desc: 'Присутствовал в каждой сохранённой неделе (ни одного пропуска)',
+                test: (hist, player, savedWeeks) => hist.length === savedWeeks.length && hist.length >= 3
+            }
+        ];
+
+        // ── Compute achievements for all players ──
+        function computeAchievements() {
+            const savedWeeks = STATE.weeks
+                .filter(w => w.distribution?.length)
+                .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+            if (!savedWeeks.length) return {};
+
+            // Build per-player history: array of { week, dist, playerId }
+            const historyByPlayer = {};
+            for (const week of savedWeeks) {
+                for (const dist of week.distribution) {
+                    if (!historyByPlayer[dist.playerId]) historyByPlayer[dist.playerId] = [];
+                    historyByPlayer[dist.playerId].push({ week, dist, playerId: dist.playerId });
+                }
+            }
+
+            const result = {};
+            for (const [playerIdStr, hist] of Object.entries(historyByPlayer)) {
+                const playerId = parseInt(playerIdStr);
+                const player = STATE.players.find(p => p.id === playerId);
+                result[playerId] = ACHIEVEMENTS.filter(a => {
+                    try { return a.test(hist, player, savedWeeks); }
+                    catch (e) { return false; }
+                });
+            }
+            return result;
+        }
+
+        // ── Renders the achievements card grid ──
+        function renderAchievementsSection() {
+            const container = document.getElementById('achievements-grid');
+            const savedWeeks = STATE.weeks.filter(w => w.distribution?.length);
+            const achievements = computeAchievements();
+
+            if (!Object.keys(achievements).length) {
+                container.innerHTML = '<div class="empty-state">Нет данных для вычисления достижений.</div>';
+                return;
+            }
+
+            // Collect all players who ever appeared in any distribution
+            const seenIds = new Set(savedWeeks.flatMap(w => w.distribution.map(d => d.playerId)));
+            const players = [...seenIds].map(id => {
+                const p = STATE.players.find(p => p.id === id);
+                const name = p?.name || savedWeeks.flatMap(w => w.distribution)
+                    .find(d => d.playerId === id)?.playerName || `#${id}`;
+                return { id, name, player: p };
+            }).sort((a, b) => {
+                // Sort: most achievements first, then alphabetical
+                const aLen = (achievements[a.id] || []).length;
+                const bLen = (achievements[b.id] || []).length;
+                return bLen - aLen || a.name.localeCompare(b.name);
+            });
+
+            container.innerHTML = `<div class="achievements-grid">${players.map(({ id, name, player }) => {
+                const earned = achievements[id] || [];
+                const role = player ? getRole(player.role) : null;
+                const weeks = player ? playerWeeks(player) : '?';
+                const weeksInHistory = savedWeeks.filter(w => w.distribution.some(d => d.playerId === id)).length;
+
+                const badgesHTML = earned.length
+                    ? earned.map(a => `
+            <span class="achievement-badge" style="color:${a.color};border-color:${a.color}44;background:${a.color}11"
+                  title="${esc(a.desc)}">
+              ${a.emoji} ${esc(a.label)}
+            </span>`).join('')
+                    : `<span class="achievement-card-empty">Достижений пока нет</span>`;
+
+                const roleHTML = role
+                    ? `<span class="role-badge" style="background:${role.color}28;color:${role.color};border:1px solid ${role.color}44;margin-right:6px">${esc(role.name)}</span>`
+                    : '';
+
+                return `<div class="achievement-card">
+        <div class="achievement-card-name">${esc(name)}</div>
+        <div class="achievement-card-role">
+          ${roleHTML}
+          <span style="color:var(--text-dim)">${weeks} нед. в гильдии · ${weeksInHistory} нед. в истории</span>
+        </div>
+        <div>${badgesHTML}</div>
+      </div>`;
+            }).join('')
+                }</div>`;
+        }
+
+        // ============================
         // THEME TOGGLE
         // ============================
         function toggleTheme() {
             const isLight = document.documentElement.classList.toggle('light');
             document.getElementById('theme-label').textContent = isLight ? 'Тёмная' : 'Светлая';
             try { localStorage.setItem('roxTheme', isLight ? 'light' : 'dark'); } catch (e) { }
+            // Rebuild chart so Chart.js colour options reflect the new theme
+            if (_chartInstance) refreshChart();
         }
         function applyTheme() {
             try {
