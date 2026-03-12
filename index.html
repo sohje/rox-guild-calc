@@ -8,6 +8,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&display=swap"
         rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.5.0/lz-string.min.js"></script>
     <style>
         :root {
             --bg: #0b0e15;
@@ -915,8 +916,8 @@
                     <button class="btn btn-outline btn-sm" onclick="addBoxType()">+ Добавить тип</button>
                     <hr style="border-color:var(--border);margin:12px 0">
                     <div class="tip"><b>Смешивание (blend):</b> Насколько сильно коробка привязана к своей активности.
-                        При 100% — чисто по очкам своей активности. При 0% — по общему счёту. Значение 70%: активность
-                        имеет приоритет, но общий вклад смягчает крайности для саппортов.
+                        При 100% — чисто по очкам своей активности. При 0% — как раньше, по общему счёту. Значение 70%:
+                        активность имеет приоритет, но общий вклад смягчает крайности для саппортов.
                     </div>
                     <div class="field-row">
                         <label>Привязка к активности</label>
@@ -1014,6 +1015,8 @@
                             <div class="total-boxes-display">Всего коробок: <span id="res-total-boxes">0</span></div>
                         </div>
                         <button class="btn btn-outline" onclick="saveDistribution()">💾 Сохранить в историю</button>
+                        <button class="btn btn-outline" onclick="shareDistribution()" id="btn-share"
+                            style="border-color:var(--gold-dim);color:var(--gold)">🔗 Поделиться</button>
                     </div>
                     <div class="tbl-wrap">
                         <table id="results-table">
@@ -1042,6 +1045,41 @@
         </div>
 
     </div><!-- /main -->
+
+    <!-- SHARE LINK MODAL -->
+    <div class="modal-overlay" id="shareModal">
+        <div class="modal" style="max-width:560px">
+            <div class="modal-title">🔗 Поделиться распределением</div>
+            <div style="margin-bottom:12px;font-size:0.9rem;color:var(--text-dim);line-height:1.6">
+                Ссылка содержит полный снимок результатов этой недели. Получатель увидит таблицу распределения без
+                необходимости иметь сохранённые данные гильдии.
+            </div>
+            <div style="position:relative;margin-bottom:12px">
+                <textarea id="share-url-text" readonly
+                    style="width:100%;height:72px;background:var(--bg3);border:1px solid var(--border);color:var(--text-dim);
+               font-family:monospace;font-size:0.72rem;padding:10px;resize:none;line-height:1.4;word-break:break-all"></textarea>
+            </div>
+            <div id="share-copy-feedback"
+                style="height:18px;font-size:0.8rem;color:var(--gold);margin-bottom:8px;opacity:0;transition:opacity 0.3s">
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-outline" onclick="closeShareModal()">Закрыть</button>
+                <button class="btn btn-gold" onclick="copyShareUrl()">📋 Скопировать ссылку</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SHARE VIEWER MODAL — shown when opening a shared link -->
+    <div class="modal-overlay" id="shareViewerModal">
+        <div class="modal" style="max-width:900px;width:97%">
+            <div class="modal-title" id="shareViewerTitle">📦 Распределение коробок</div>
+            <div id="shareViewerSubtitle" style="font-size:0.82rem;color:var(--text-dim);margin-bottom:14px"></div>
+            <div id="shareViewerContent"></div>
+            <div class="modal-actions">
+                <button class="btn btn-outline" onclick="closeShareViewer()">Закрыть</button>
+            </div>
+        </div>
+    </div>
 
     <!-- PLAYER MODAL -->
     <div class="modal-overlay" id="playerModal">
@@ -1158,7 +1196,7 @@
                 const saved = JSON.parse(raw);
                 STATE = saved;
 
-                // ensure boxTypes array exists ──
+                // ensure boxTypes array exists
                 if (!STATE.boxTypes || !Array.isArray(STATE.boxTypes) || STATE.boxTypes.length === 0) {
                     // Migrate from old flat boxCounts on weeks — reconstruct default types
                     STATE.boxTypes = DEFAULT_BOX_TYPES.map(b => ({ ...b }));
@@ -1166,7 +1204,7 @@
                 // Ensure blendRatio setting exists
                 if (STATE.settings.blendRatio === undefined) STATE.settings.blendRatio = 0.7;
 
-                // old saves had settings.roleMultipliers instead of STATE.roles ──
+                // old saves had settings.roleMultipliers instead of STATE.roles
                 if (!STATE.roles || !Array.isArray(STATE.roles) || STATE.roles.length === 0) {
                     const oldMult = STATE.settings?.roleMultipliers || {};
                     STATE.roles = DEFAULT_ROLES.map(r => {
@@ -1182,7 +1220,7 @@
                 // Clean up legacy key if present
                 if (STATE.settings?.roleMultipliers) delete STATE.settings.roleMultipliers;
 
-                // players with old string role like "DPS" → match to role id ──
+                // players with old string role like "DPS" → match to role id
                 STATE.players.forEach(p => {
                     if (p.role && !p.role.startsWith('role_')) {
                         const match = STATE.roles.find(r => r.name === p.role || r.id === p.role);
@@ -1190,7 +1228,7 @@
                     }
                 });
 
-                // players with numeric p.weeks → approximate joinDate ──
+                // players with numeric p.weeks → approximate joinDate
                 STATE.players.forEach(p => {
                     if (!p.joinDate && p.weeks !== undefined) {
                         // Backfill: approximate join date = now minus weeks * 7 days
@@ -1847,6 +1885,11 @@
                 const finalTipId = `cell-${r.playerId}-final`;
                 window._tipData[finalTipId] = buildTipFinalScore(r, s, totalBoxes);
 
+                // Proportion tooltip — explains how the % share is derived
+                const pctTipId = `cell-${r.playerId}-pct`;
+                const totalScore = allocs.reduce((acc, a) => acc + a.finalScore, 0);
+                window._tipData[pctTipId] = buildTipProportion(r, totalScore, totalBoxes, allocs.length);
+
                 // Per-type box cells
                 const boxTypeCells = STATE.boxTypes.map(bt => {
                     const count = r.boxBreakdown?.[bt.id] || 0;
@@ -1874,7 +1917,7 @@
       <td class="score-breakdown" data-tip-id="${loyTipId}">×${r.loyaltyMult.toFixed(2)}</td>
       <td class="score-breakdown" data-tip-id="${defTipId}">${defTxt}</td>
       <td style="color:var(--gold-light);font-weight:600" data-tip-id="${finalTipId}">${r.finalScore.toFixed(3)}</td>
-      <td style="color:var(--text-dim)">${pct}%</td>
+      <td style="color:var(--text-dim)" data-tip-id="${pctTipId}">${pct}%</td>
       ${boxTypeCells}
       <td class="box-count" style="background:rgba(201,162,39,0.08)">${r.totalBoxes}</td>
     </tr>`;
@@ -1901,7 +1944,7 @@
       <th>Лояльность <span class="col-info" data-tip-id="hdr-loyalty">i</span></th>
       <th>Дефицит <span class="col-info" data-tip-id="hdr-deficit">i</span></th>
       <th>Итого <span class="col-info" data-tip-id="hdr-final">i</span></th>
-      <th>Доля %</th>
+      <th>Доля % <span class="col-info" data-tip-id="hdr-pct">i</span></th>
       ${boxTypeHeaders}
       <th>📦 Всего</th>`;
             }
@@ -2196,7 +2239,7 @@ ${actLines || '  (нет очков)'}
 ${defLine}
 // 5. Итого → доля пула
   ══════════════════════════
-  финСчет      ${r.finalScore.toFixed(3)}
+  finalScore      ${r.finalScore.toFixed(3)}
   доля            ${(proportion * 100).toFixed(2)}%
   точных коробок  ${exactBoxes}</pre>`;
             return html;
@@ -2237,6 +2280,194 @@ ${defLine}
             window._tipData['hdr-final'] = `
     <div class="tip-title">Итоговый счёт</div>
     <div style="font-size:0.8rem;color:var(--text);margin-top:4px;line-height:1.5">Сумма всех взвешенных очков активностей + бонус участия + упр. бонус, умноженная на лояльность, плюс поправка дефицита. На основе этого числа рассчитывается доля коробок.</div>`;
+            window._tipData['hdr-pct'] = `
+    <div class="tip-title">Доля пула (%)</div>
+    <div style="font-size:0.8rem;color:var(--text);margin-top:4px;line-height:1.5">Процент от суммарного пула коробок, который причитается данному игроку. Вычисляется как <b>finalScore ÷ Σ(все finalScore)</b>. Наведите на конкретную ячейку чтобы увидеть пошаговый расчёт для каждого игрока.</div>
+    <div class="tip-formula">Формула: доля = finalScore ÷ Σ finalScore</div>`;
+        }
+
+        function buildTipProportion(r, totalScore, totalBoxes, playerCount) {
+            const exact = r.proportion * totalBoxes;
+            const floor = Math.floor(exact);
+            const frac = exact % 1;
+            return `
+    <div class="tip-title">Доля пула коробок</div>
+    <pre style="font-family:monospace;font-size:0.76rem;color:var(--text);line-height:1.7;margin:0;white-space:pre-wrap">// Шаг 1 — нормировать счёт игрока
+// относительно суммы всех игроков
+доля = finalScore ÷ Σ(все finalScore)
+     = ${r.finalScore.toFixed(3)} ÷ ${totalScore.toFixed(3)}
+     = ${(r.proportion * 100).toFixed(4)}%
+
+// Шаг 2 — сколько точных коробок
+exact = доля × всего_коробок
+      = ${(r.proportion * 100).toFixed(2)}% × ${totalBoxes}
+      = ${exact.toFixed(4)}
+
+// Шаг 3 — округление остатка
+// floor = ${floor}, дробная часть = ${frac.toFixed(4)}
+// Остаток (${totalBoxes} − Σfloor) раздаётся
+// игрокам с наибольшей дробной частью.</pre>
+    <div class="tip-formula">Итог: ${floor} коробок${frac > 0.001 ? ` (+ возможно +1 по остатку)` : ''}</div>`;
+        }
+
+        // ============================
+        // SHARE VIA URL FRAGMENT
+        // ============================
+
+        // Builds a compact, self-contained snapshot of the current results
+        // suitable for encoding into a URL fragment.
+        function buildSharePayload(allocs, totalBoxes, weekLabel) {
+            return {
+                v: 2,  // payload version — lets future code detect old formats
+                guild: STATE.guild.name,
+                week: weekLabel,
+                date: new Date().toISOString().slice(0, 10),
+                totalBoxes,
+                // Box type definitions so receiver can label columns correctly
+                boxTypes: STATE.boxTypes.map(bt => ({
+                    id: bt.id, name: bt.name, color: bt.color,
+                    activityKey: bt.activityKey || null
+                })),
+                rows: allocs.map(r => {
+                    const role = getRole(r.role);
+                    return {
+                        name: r.playerName,
+                        cls: r.playerClass || '',
+                        role: role.name,
+                        roleColor: role.color,
+                        scores: ACTIVITIES.reduce((acc, a) => {
+                            acc[a.key] = r.breakdown[a.key]?.raw ?? 0; return acc;
+                        }, {}),
+                        finalScore: parseFloat(r.finalScore.toFixed(4)),
+                        proportion: parseFloat(r.proportion.toFixed(6)),
+                        boxBreakdown: r.boxBreakdown,
+                        totalBoxes: r.totalBoxes
+                    };
+                })
+            };
+        }
+
+        function shareDistribution() {
+            if (!window._lastAllocs || !window._lastAllocs.length) {
+                alert('Сначала рассчитайте распределение'); return;
+            }
+            const week = STATE.weeks.find(w => w.id === window._lastWeekId);
+            const weekLabel = week?.label || 'Неделя';
+
+            const payload = buildSharePayload(window._lastAllocs, window._lastTotalBoxes, weekLabel);
+            const json = JSON.stringify(payload);
+            const compressed = LZString.compressToEncodedURIComponent(json);
+            const url = `${location.href.split('#')[0]}#share=${compressed}`;
+
+            document.getElementById('share-url-text').value = url;
+            document.getElementById('shareModal').classList.add('open');
+        }
+
+        function copyShareUrl() {
+            const text = document.getElementById('share-url-text').value;
+            navigator.clipboard.writeText(text).then(() => {
+                const fb = document.getElementById('share-copy-feedback');
+                fb.textContent = '✓ Ссылка скопирована в буфер обмена';
+                fb.style.opacity = '1';
+                setTimeout(() => fb.style.opacity = '0', 2500);
+            }).catch(() => {
+                // Fallback for non-HTTPS or restricted contexts
+                document.getElementById('share-url-text').select();
+                document.execCommand('copy');
+            });
+        }
+
+        function closeShareModal() {
+            document.getElementById('shareModal').classList.remove('open');
+            // Clean the fragment so the URL doesn't stay cluttered
+            history.replaceState(null, '', location.pathname + location.search);
+        }
+
+        // Called on page load — checks if the URL contains a shared fragment
+        // and if so, decodes and renders it in a read-only viewer modal.
+        function checkShareFragment() {
+            const hash = location.hash;
+            if (!hash.startsWith('#share=')) return;
+
+            const encoded = hash.slice(7); // strip '#share='
+            let payload;
+            try {
+                const json = LZString.decompressFromEncodedURIComponent(encoded);
+                payload = JSON.parse(json);
+            } catch (e) {
+                console.warn('Failed to decode share fragment:', e);
+                return;
+            }
+            if (!payload || !payload.rows) return;
+            renderShareViewer(payload);
+        }
+
+        function renderShareViewer(payload) {
+            document.getElementById('shareViewerTitle').textContent =
+                `📦 ${payload.guild || 'Гильдия'} — ${payload.week || 'Распределение'}`;
+            document.getElementById('shareViewerSubtitle').textContent =
+                `Дата: ${payload.date || '—'} · Всего коробок: ${payload.totalBoxes} · Участников: ${payload.rows.length}`;
+
+            const boxTypes = payload.boxTypes || [];
+            const hasBreakdown = boxTypes.length > 0;
+
+            // Build table header
+            const btHeaders = hasBreakdown
+                ? boxTypes.map(bt => `<th style="color:${bt.color}">📦 ${esc(bt.name)}</th>`).join('')
+                : '<th>📦 Коробок</th>';
+
+            // Sort rows by total boxes desc
+            const rows = [...payload.rows].sort((a, b) => b.totalBoxes - a.totalBoxes);
+            const totalScore = rows.reduce((s, r) => s + r.finalScore, 0);
+
+            const rowsHTML = rows.map((r, i) => {
+                const roleStyle = `background:${r.roleColor}28;color:${r.roleColor};border:1px solid ${r.roleColor}66`;
+                const pct = (r.proportion * 100).toFixed(1);
+
+                const actCells = ACTIVITIES.map(a =>
+                    `<td style="color:var(--text-dim);font-size:0.83rem">${r.scores?.[a.key] ?? 0}</td>`
+                ).join('');
+
+                const btCells = hasBreakdown
+                    ? boxTypes.map(bt =>
+                        `<td class="box-count" style="color:${bt.color}">${r.boxBreakdown?.[bt.id] ?? '—'}</td>`
+                    ).join('')
+                    : `<td class="box-count">${r.totalBoxes}</td>`;
+
+                return `<tr>
+      <td>${i + 1}</td>
+      <td><b>${esc(r.name)}</b>${r.cls ? `<br><span style="font-size:0.76rem;color:var(--text-dim)">${esc(r.cls)}</span>` : ''}</td>
+      <td><span class="role-badge" style="${roleStyle}">${esc(r.role)}</span></td>
+      ${actCells}
+      <td style="color:var(--gold-light);font-weight:600">${r.finalScore.toFixed(3)}</td>
+      <td style="color:var(--text-dim)">${pct}%</td>
+      ${btCells}
+      <td class="box-count" style="background:rgba(201,162,39,0.08)">${r.totalBoxes}</td>
+    </tr>`;
+            }).join('');
+
+            document.getElementById('shareViewerContent').innerHTML = `
+    <div class="tbl-wrap"><table>
+      <thead><tr>
+        <th>#</th><th>Игрок</th><th>Роль</th>
+        ${ACTIVITIES.map(a => `<th>${a.label}</th>`).join('')}
+        <th>Итого</th><th>Доля %</th>
+        ${btHeaders}
+        <th>📦 Всего</th>
+      </tr></thead>
+      <tbody>${rowsHTML}</tbody>
+    </table></div>
+    <div style="margin-top:10px;font-size:0.78rem;color:var(--text-dim)">
+      Это просмотр общего снимка. Данные зашифрованы в URL и не сохраняются в вашем браузере.
+    </div>`;
+
+            document.getElementById('shareViewerModal').classList.add('open');
+        }
+
+        function closeShareViewer() {
+            document.getElementById('shareViewerModal').classList.remove('open');
+            // Remove fragment so reloading the page doesn't re-open the viewer
+            history.replaceState(null, '', location.pathname + location.search);
         }
 
         // ============================
@@ -2266,6 +2497,8 @@ ${defLine}
         registerHeaderTips();
         document.getElementById('guildNameDisplay').textContent = STATE.guild.name;
         renderPlayers();
+        // Must run after DOM and LZString are ready
+        checkShareFragment();
     </script>
     <!-- TOOLTIP -->
     <div id="tip-box"></div>
