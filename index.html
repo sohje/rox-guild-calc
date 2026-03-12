@@ -887,8 +887,7 @@
                     <div class="section-title">Система дефицита</div>
                     <div class="tip">Отслеживает, насколько каждый игрок недополучил коробок по сравнению с его
                         «заслуженной долей» за все прошлые недели. Помогает компенсировать накопленную несправедливость.
-                        <b>Вес 0</b> = система отключена. <b>Вес 1</b> = полная компенсация.
-                    </div>
+                        <b>Вес 0</b> = система отключена. <b>Вес 1</b> = полная компенсация.</div>
                     <div class="field-row">
                         <label>Вес дефицита</label>
                         <input type="range" id="cfg-deficitWeight" min="0" max="1" step="0.05" value="0.4"
@@ -917,8 +916,7 @@
                     <hr style="border-color:var(--border);margin:12px 0">
                     <div class="tip"><b>Смешивание (blend):</b> Насколько сильно коробка привязана к своей активности.
                         При 100% — чисто по очкам своей активности. При 0% — как раньше, по общему счёту. Значение 70%:
-                        активность имеет приоритет, но общий вклад смягчает крайности для саппортов.
-                    </div>
+                        активность имеет приоритет, но общий вклад смягчает крайности для саппортов.</div>
                     <div class="field-row">
                         <label>Привязка к активности</label>
                         <input type="range" id="cfg-blendRatio" min="0" max="1" step="0.05" value="0.7"
@@ -2403,6 +2401,8 @@ exact = доля × всего_коробок
         }
 
         function renderShareViewer(payload) {
+            window._tipData = window._tipData || {};
+
             document.getElementById('shareViewerTitle').textContent =
                 `📦 ${payload.guild || 'Гильдия'} — ${payload.week || 'Распределение'}`;
             document.getElementById('shareViewerSubtitle').textContent =
@@ -2410,48 +2410,183 @@ exact = доля × всего_коробок
 
             const boxTypes = payload.boxTypes || [];
             const hasBreakdown = boxTypes.length > 0;
+            const totalBoxes = payload.totalBoxes;
 
-            // Build table header
-            const btHeaders = hasBreakdown
-                ? boxTypes.map(bt => `<th style="color:${bt.color}">📦 ${esc(bt.name)}</th>`).join('')
-                : '<th>📦 Коробок</th>';
-
-            // Sort rows by total boxes desc
+            // Sort by boxes desc, assign a stable index used as tooltip key prefix
             const rows = [...payload.rows].sort((a, b) => b.totalBoxes - a.totalBoxes);
             const totalScore = rows.reduce((s, r) => s + r.finalScore, 0);
 
+            // ── Register header tooltips for the viewer ──
+            // Raw activity scores column: explain what the number means for a viewer
+            // who may not know the guild's weighting settings.
+            ACTIVITIES.forEach(a => {
+                const id = `sv-hdr-${a.key}`;
+                window._tipData[id] = `
+      <div class="tip-title">${a.label} — сырые очки</div>
+      <div style="font-size:0.8rem;color:var(--text);line-height:1.5;margin-top:4px">
+        Количество очков, набранных игроком в активности <b>${a.label}</b> за эту неделю.
+        При расчёте итогового счёта каждая активность нормализуется относительно
+        максимального результата среди участников и умножается на ролевой мультипликатор
+        и вес активности, заданные организаторами гильдии.
+      </div>`;
+            });
+            const svHdrFinalId = 'sv-hdr-final';
+            window._tipData[svHdrFinalId] = `
+    <div class="tip-title">Итоговый счёт</div>
+    <div style="font-size:0.8rem;color:var(--text);line-height:1.5;margin-top:4px">
+      Взвешенная сумма всех активностей с учётом ролевого мультипликатора, бонуса
+      участия, управленческого бонуса, множителя лояльности и поправки дефицита.
+      Именно это число определяет долю пула коробок.
+    </div>
+    <div class="tip-formula">finalScore = (Σ активности + участие + управление) × лояльность + дефицит</div>`;
+            const svHdrPctId = 'sv-hdr-pct';
+            window._tipData[svHdrPctId] = `
+    <div class="tip-title">Доля пула (%)</div>
+    <div style="font-size:0.8rem;color:var(--text);line-height:1.5;margin-top:4px">
+      Процент от всего пула коробок, причитающийся игроку.
+    </div>
+    <div class="tip-formula">доля = finalScore ÷ Σ(все finalScore)</div>`;
+
+            // ── Build rows, registering per-cell tooltips along the way ──
             const rowsHTML = rows.map((r, i) => {
                 const roleStyle = `background:${r.roleColor}28;color:${r.roleColor};border:1px solid ${r.roleColor}66`;
                 const pct = (r.proportion * 100).toFixed(1);
+                const slug = `sv-${i}`; // stable prefix for this player's tip IDs
 
-                const actCells = ACTIVITIES.map(a =>
-                    `<td style="color:var(--text-dim);font-size:0.83rem">${r.scores?.[a.key] ?? 0}</td>`
-                ).join('');
+                // Activity score cells — one tooltip per activity showing the raw value
+                // and a brief note that the viewer doesn't have access to the normalised
+                // intermediate values (they weren't included to keep URL size small).
+                const actCells = ACTIVITIES.map(a => {
+                    const raw = r.scores?.[a.key] ?? 0;
+                    const tipId = `${slug}-${a.key}`;
+                    window._tipData[tipId] = `
+        <div class="tip-title">${a.label} — очки игрока</div>
+        <div class="tip-row">
+          <span class="tip-label">Сырые очки</span>
+          <span class="tip-val">${raw}</span>
+        </div>
+        <div class="tip-formula">
+          Нормализованное значение и веса активности доступны только
+          организаторам гильдии — они не включены в снимок, чтобы
+          ссылка оставалась короткой.
+        </div>`;
+                    return `<td class="score-breakdown" data-tip-id="${tipId}">${raw}</td>`;
+                }).join('');
 
+                // Final score cell — shows how this score maps to a share of the pool
+                const finalTipId = `${slug}-final`;
+                const exact = (r.proportion * totalBoxes).toFixed(2);
+                window._tipData[finalTipId] = `
+      <div class="tip-title">Итоговый счёт — ${esc(r.name)}</div>
+      <pre style="font-family:monospace;font-size:0.76rem;color:var(--text);line-height:1.7;margin:0;white-space:pre-wrap">// Вклад в общий пул
+finalScore   = ${r.finalScore.toFixed(4)}
+Σ всех score = ${totalScore.toFixed(4)}
+
+// Доля пула
+доля = ${r.finalScore.toFixed(4)} ÷ ${totalScore.toFixed(4)}
+     = ${(r.proportion * 100).toFixed(4)}%
+
+// Точных коробок
+exact = ${(r.proportion * 100).toFixed(2)}% × ${totalBoxes}
+      = ${exact}</pre>
+      <div class="tip-formula">Итоговое количество — после округления остатков.</div>`;
+
+                // Proportion cell — same breakdown as above but framed as "why this %"
+                const pctTipId = `${slug}-pct`;
+                window._tipData[pctTipId] = `
+      <div class="tip-title">Доля — ${esc(r.name)}</div>
+      <pre style="font-family:monospace;font-size:0.76rem;color:var(--text);line-height:1.7;margin:0;white-space:pre-wrap">доля = finalScore ÷ Σ finalScore
+     = ${r.finalScore.toFixed(3)} ÷ ${totalScore.toFixed(3)}
+     = ${(r.proportion * 100).toFixed(4)}% ≈ ${pct}%</pre>`;
+
+                // Per-box-type cells — explain the blend logic at a high level,
+                // since the exact blend parameters live in guild settings (not payload).
                 const btCells = hasBreakdown
-                    ? boxTypes.map(bt =>
-                        `<td class="box-count" style="color:${bt.color}">${r.boxBreakdown?.[bt.id] ?? '—'}</td>`
-                    ).join('')
+                    ? boxTypes.map(bt => {
+                        const count = r.boxBreakdown?.[bt.id] ?? 0;
+                        const btTipId = `${slug}-bt-${bt.id}`;
+                        const actLabel = bt.activityKey
+                            ? (ACTIVITIES.find(a => a.key === bt.activityKey)?.label || bt.activityKey)
+                            : null;
+                        window._tipData[btTipId] = `
+            <div class="tip-title">📦 ${esc(bt.name)} — ${esc(r.name)}</div>
+            <div class="tip-row">
+              <span class="tip-label">Привязка</span>
+              <span class="tip-val">${actLabel ? esc(actLabel) : 'Общий счёт'}</span>
+            </div>
+            ${actLabel ? `
+            <div class="tip-row">
+              <span class="tip-label">Очки ${esc(actLabel)}</span>
+              <span class="tip-val">${r.scores?.[bt.activityKey] ?? 0}</span>
+            </div>` : ''}
+            <div class="tip-row">
+              <span class="tip-label">Получено</span>
+              <span class="tip-val gold">${count} 📦</span>
+            </div>
+            <div class="tip-formula">
+              Пул этого типа распределяется по смешанному счёту:
+              очки ${actLabel ? esc(actLabel) : 'всех активностей'} +
+              общий вклад (коэффициент задан организаторами).
+            </div>`;
+                        return `<td class="box-count" data-tip-id="${btTipId}" style="color:${bt.color}">${count || '—'}</td>`;
+                    }).join('')
                     : `<td class="box-count">${r.totalBoxes}</td>`;
+
+                // Total boxes cell
+                const totalTipId = `${slug}-total`;
+                window._tipData[totalTipId] = `
+      <div class="tip-title">Итого коробок — ${esc(r.name)}</div>
+      ${hasBreakdown ? `
+      <div style="margin-bottom:6px;font-size:0.8rem;color:var(--text-dim)">Разбивка по типам:</div>
+      ${boxTypes.map(bt => `
+        <div class="tip-row">
+          <span class="tip-label" style="color:${bt.color}">${esc(bt.name)}</span>
+          <span class="tip-val">${r.boxBreakdown?.[bt.id] ?? 0} 📦</span>
+        </div>`).join('')}
+      <div style="border-top:1px solid var(--border);margin-top:6px;padding-top:6px"></div>` : ''}
+      <div class="tip-row">
+        <span class="tip-label">Итого</span>
+        <span class="tip-val gold">${r.totalBoxes} 📦 (${pct}%)</span>
+      </div>`;
 
                 return `<tr>
       <td>${i + 1}</td>
       <td><b>${esc(r.name)}</b>${r.cls ? `<br><span style="font-size:0.76rem;color:var(--text-dim)">${esc(r.cls)}</span>` : ''}</td>
       <td><span class="role-badge" style="${roleStyle}">${esc(r.role)}</span></td>
       ${actCells}
-      <td style="color:var(--gold-light);font-weight:600">${r.finalScore.toFixed(3)}</td>
-      <td style="color:var(--text-dim)">${pct}%</td>
+      <td style="color:var(--gold-light);font-weight:600" data-tip-id="${finalTipId}">${r.finalScore.toFixed(3)}</td>
+      <td style="color:var(--text-dim)" data-tip-id="${pctTipId}">${pct}%</td>
       ${btCells}
-      <td class="box-count" style="background:rgba(201,162,39,0.08)">${r.totalBoxes}</td>
+      <td class="box-count" style="background:rgba(201,162,39,0.08)" data-tip-id="${totalTipId}">${r.totalBoxes}</td>
     </tr>`;
             }).join('');
+
+            // ── Build header with ℹ icons wired to the registered tips ──
+            const btHeaders = hasBreakdown
+                ? boxTypes.map(bt => {
+                    const id = `sv-hdr-bt-${bt.id}`;
+                    const actLabel = bt.activityKey
+                        ? (ACTIVITIES.find(a => a.key === bt.activityKey)?.label || bt.activityKey)
+                        : 'общий счёт';
+                    window._tipData[id] = `
+          <div class="tip-title">📦 ${esc(bt.name)}</div>
+          <div style="font-size:0.8rem;color:var(--text);margin-top:4px;line-height:1.5">
+            Привязка: <b>${esc(actLabel)}</b>. Распределяется пропорционально
+            смешанному счёту (очки активности + общий вклад).
+          </div>`;
+                    return `<th style="color:${bt.color}">📦 ${esc(bt.name)} <span class="col-info" data-tip-id="${id}">i</span></th>`;
+                }).join('')
+                : '<th>📦 Коробок</th>';
 
             document.getElementById('shareViewerContent').innerHTML = `
     <div class="tbl-wrap"><table>
       <thead><tr>
         <th>#</th><th>Игрок</th><th>Роль</th>
-        ${ACTIVITIES.map(a => `<th>${a.label}</th>`).join('')}
-        <th>Итого</th><th>Доля %</th>
+        ${ACTIVITIES.map(a =>
+                `<th>${a.label} <span class="col-info" data-tip-id="sv-hdr-${a.key}">i</span></th>`
+            ).join('')}
+        <th>Итого <span class="col-info" data-tip-id="${svHdrFinalId}">i</span></th>
+        <th>Доля % <span class="col-info" data-tip-id="${svHdrPctId}">i</span></th>
         ${btHeaders}
         <th>📦 Всего</th>
       </tr></thead>
@@ -2459,6 +2594,7 @@ exact = доля × всего_коробок
     </table></div>
     <div style="margin-top:10px;font-size:0.78rem;color:var(--text-dim)">
       Это просмотр общего снимка. Данные зашифрованы в URL и не сохраняются в вашем браузере.
+      Наведите курсор на любую ячейку, чтобы узнать подробности расчёта.
     </div>`;
 
             document.getElementById('shareViewerModal').classList.add('open');
