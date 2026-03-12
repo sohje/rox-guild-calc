@@ -744,6 +744,67 @@
             font-style: italic;
         }
 
+        /* VERDICT CARDS */
+        .verdict-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 12px;
+        }
+
+        .verdict-card {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-left: 3px solid var(--border);
+            padding: 12px 14px;
+            transition: border-color 0.18s;
+        }
+
+        .verdict-card:hover {
+            border-color: var(--gold-dim);
+        }
+
+        .verdict-card-name {
+            font-family: 'Cinzel', serif;
+            font-size: 0.82rem;
+            color: var(--text-bright);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .verdict-boxes {
+            font-size: 0.78rem;
+            color: var(--gold);
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .verdict-line {
+            font-size: 0.82rem;
+            color: var(--text);
+            line-height: 1.55;
+            margin-bottom: 4px;
+        }
+
+        .verdict-boost {
+            color: #52c87a;
+        }
+
+        .verdict-drag {
+            color: #e05252;
+        }
+
+        .verdict-advice {
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid var(--border);
+            font-size: 0.78rem;
+            color: var(--text-dim);
+            font-style: italic;
+            line-height: 1.5;
+        }
+
         /* TOOLTIPS */
         #tip-box {
             position: fixed;
@@ -1016,8 +1077,9 @@
                     <button class="btn btn-outline btn-sm" onclick="addBoxType()">+ Добавить тип</button>
                     <hr style="border-color:var(--border);margin:12px 0">
                     <div class="tip"><b>Смешивание (blend):</b> Насколько сильно коробка привязана к своей активности.
-                        При 100% — чисто по очкам своей активности. При 0% — как раньше, по общему счёту. Значение 70%:
-                        активность имеет приоритет, но общий вклад смягчает крайности для саппортов.</div>
+                        При 100% — чисто по очкам своей активности. При 0% — как раньше, по общему счёту. Значение 70%
+                        рекомендуется: активность имеет приоритет, но общий вклад смягчает крайности для саппортов.
+                    </div>
                     <div class="field-row">
                         <label>Привязка к активности</label>
                         <input type="range" id="cfg-blendRatio" min="0" max="1" step="0.05" value="0.7"
@@ -1124,6 +1186,20 @@
                             </thead>
                             <tbody id="results-tbody"></tbody>
                         </table>
+                    </div>
+
+                    <!-- Verdict section — toggled open/closed -->
+                    <div style="margin-top:18px">
+                        <button class="btn btn-outline btn-sm" onclick="toggleVerdicts()" id="verdict-toggle-btn"
+                            style="margin-bottom:12px">
+                            💬 Показать вердикты
+                        </button>
+                        <div id="verdict-section" style="display:none">
+                            <div class="section-title" style="font-size:0.82rem;margin-bottom:10px">
+                                Персональные вердикты
+                            </div>
+                            <div id="verdict-cards"></div>
+                        </div>
                     </div>
                     <div style="margin-top:12px;font-size:0.8rem;color:var(--text-dim)">
                         * Все промежуточные очки нормализованы: 1.0 = наилучший результат среди участников данной
@@ -2108,6 +2184,13 @@
             document.getElementById('res-total-boxes').textContent = totalBoxes;
             document.getElementById('distribution-results').style.display = 'block';
 
+            // Render verdict cards (hidden by default — user toggles open)
+            const verdictSection = document.getElementById('verdict-section');
+            if (verdictSection) verdictSection.style.display = 'none';
+            const verdictBtn = document.getElementById('verdict-toggle-btn');
+            if (verdictBtn) verdictBtn.textContent = '💬 Показать вердикты';
+            renderVerdictCards(allocs, s);
+
             window._lastAllocs = allocs;
             window._lastWeekId = week.id;
             window._lastTotalBoxes = totalBoxes;
@@ -2753,6 +2836,27 @@ exact = ${(r.proportion * 100).toFixed(2)}% × ${totalBoxes}
     <div style="margin-top:10px;font-size:0.78rem;color:var(--text-dim)">
       Это просмотр общего снимка. Данные зашифрованы в URL и не сохраняются в вашем браузере.
       Наведите курсор на любую ячейку, чтобы узнать подробности расчёта.
+    </div>
+
+    <!-- Share verdicts -->
+    <div style="margin-top:22px">
+      <div class="section-title" style="font-size:0.82rem;margin-bottom:10px">💬 Персональные вердикты</div>
+      <div class="verdict-grid">${rows.map(r => {
+                const v = generateShareVerdict(r, rows, totalBoxes);
+                if (!v) return '';
+                const roleStyle = `background:${r.roleColor}28;color:${r.roleColor};border:1px solid ${r.roleColor}44;font-size:0.68rem`;
+                return `<div class="verdict-card" style="border-left-color:${v.accentColor}">
+            <div class="verdict-card-name">
+              ${esc(r.name)}
+              <span class="role-badge" style="${roleStyle}">${esc(r.role)}</span>
+            </div>
+            <div class="verdict-boxes">${r.totalBoxes} 📦 · ${(r.proportion * 100).toFixed(1)}% пула</div>
+            <div class="verdict-line">${v.summary}</div>
+            ${v.boost ? `<div class="verdict-line verdict-boost">${v.boost}</div>` : ''}
+            ${v.drag ? `<div class="verdict-line verdict-drag">${v.drag}</div>` : ''}
+          </div>`;
+            }).join('')
+                }</div>
     </div>`;
 
             document.getElementById('shareViewerModal').classList.add('open');
@@ -2762,6 +2866,196 @@ exact = ${(r.proportion * 100).toFixed(2)}% × ${totalBoxes}
             document.getElementById('shareViewerModal').classList.remove('open');
             // Remove fragment so reloading the page doesn't re-open the viewer
             history.replaceState(null, '', location.pathname + location.search);
+        }
+
+        // ============================
+        // VERDICT ENGINE
+        // ============================
+
+        // Factor labels used in human-readable verdict text
+        const VERDICT_FACTOR_LABELS = {
+            gvg: 'GvG',
+            kvm: 'KvM',
+            arcade: 'Аркада',
+            otherworld: 'Иномир',
+            orders: 'Приказы',
+            participation: 'участие в активностях',
+            loyalty: 'бонус лояльности',
+            deficit: 'поправка дефицита',
+            management: 'управленческий бонус',
+        };
+
+        // Core verdict generator — works with full alloc objects from calculateDistribution().
+        // Returns { boost, drag, summary, advice, accentColor } for one player.
+        function generateVerdict(r, allocs, s) {
+            const n = allocs.length;
+            if (n === 0) return null;
+
+            const avgProportion = allocs.reduce((a, b) => a + b.proportion, 0) / n;
+            const relDiff = r.proportion - avgProportion; // positive = above average
+
+            // ── Compute per-factor deltas relative to group average ──
+            // Each delta is in the same "finalScore contribution" units so they're comparable.
+            const avgOf = key => allocs.reduce((a, b) => a + (b[key] || 0), 0) / n;
+            const avgActOf = key => allocs.reduce((a, b) => a + (b.breakdown?.[key]?.weighted || 0), 0) / n;
+
+            const factors = [
+                ...['gvg', 'kvm', 'arcade', 'otherworld', 'orders'].map(k => ({
+                    key: k,
+                    delta: (r.breakdown?.[k]?.weighted || 0) - avgActOf(k)
+                })),
+                { key: 'participation', delta: (r.participationBonus || 0) - avgOf('participationBonus') },
+                { key: 'loyalty', delta: (r.loyaltyMult - 1) - (avgOf('loyaltyMult') - 1) },
+                { key: 'deficit', delta: (r.deficitBonus || 0) - avgOf('deficitBonus') },
+                { key: 'management', delta: (r.mgmtBonus || 0) - avgOf('mgmtBonus') },
+            ].filter(f => Math.abs(f.delta) > 0.0001);
+
+            // Best boost = largest positive delta; worst drag = most negative delta
+            const boostFactor = factors.reduce((best, f) => (!best || f.delta > best.delta) ? f : best, null);
+            const dragFactor = factors.reduce((worst, f) => (!worst || f.delta < worst.delta) ? f : worst, null);
+
+            // ── Build natural-language fragments ──
+            const pctStr = (r.proportion * 100).toFixed(1);
+            const avgPctStr = (avgProportion * 100).toFixed(1);
+            const diffStr = Math.abs(relDiff * 100).toFixed(1);
+            const aboveBelow = relDiff >= 0 ? 'выше' : 'ниже';
+
+            // Summary sentence
+            const summary = `${esc(r.playerName)} получил ${r.totalBoxes} 📦 (${pctStr}% пула) — `
+                + `${diffStr}% ${aboveBelow} среднего по гильдии (${avgPctStr}%).`;
+
+            // Boost sentence — only if meaningful positive factor exists
+            let boost = null;
+            if (boostFactor && boostFactor.delta > 0.005) {
+                const lbl = VERDICT_FACTOR_LABELS[boostFactor.key] || boostFactor.key;
+                if (boostFactor.key === 'loyalty') {
+                    const weeks = playerWeeks(STATE.players.find(p => p.id === r.playerId) || {});
+                    boost = `Сильнее всего помог <b>бонус лояльности</b>: ×${r.loyaltyMult.toFixed(2)} `
+                        + `после ${weeks} нед. в гильдии.`;
+                } else if (boostFactor.key === 'participation') {
+                    boost = `Бонус за <b>участие</b> сыграл ключевую роль — `
+                        + `посещено ${r.participatedCount} из 4 активностей (+${r.participationBonus.toFixed(2)} к счёту).`;
+                } else if (boostFactor.key === 'deficit') {
+                    boost = `Поправка <b>дефицита</b> добавила ${r.deficitBonus.toFixed(2)} — `
+                        + `система компенсировала недополученное в прошлых неделях.`;
+                } else if (boostFactor.key === 'management') {
+                    boost = `Управленческий бонус (+${r.mgmtBonus.toFixed(1)}) оказал заметный вклад.`;
+                } else {
+                    const raw = r.breakdown?.[boostFactor.key]?.raw || 0;
+                    boost = `Лучший актив — <b>${lbl}</b>: ${raw} очков, `
+                        + `что выше среднего по группе на ${boostFactor.delta.toFixed(2)} ед.`;
+                }
+            }
+
+            // Drag sentence — only if meaningful negative factor exists
+            let drag = null;
+            if (dragFactor && dragFactor.delta < -0.005) {
+                const lbl = VERDICT_FACTOR_LABELS[dragFactor.key] || dragFactor.key;
+                if (dragFactor.key === 'loyalty') {
+                    const weeks = playerWeeks(STATE.players.find(p => p.id === r.playerId) || {});
+                    drag = `Лояльность ×${r.loyaltyMult.toFixed(2)} (${weeks} нед.) пока ниже среднего по гильдии — `
+                        + `со временем это выровняется.`;
+                } else if (dragFactor.key === 'participation') {
+                    const missed = 4 - r.participatedCount;
+                    drag = `Пропущено ${missed} из 4 активностей — это снизило бонус участия `
+                        + `на ${Math.abs(dragFactor.delta).toFixed(2)} ед. относительно среднего.`;
+                } else {
+                    const raw = r.breakdown?.[dragFactor.key]?.raw || 0;
+                    drag = `Слабее всего — <b>${lbl}</b>: ${raw} очков против среднего `
+                        + `(разрыв ${Math.abs(dragFactor.delta).toFixed(2)} ед.).`;
+                }
+            }
+
+            // Advice — actionable tip based on the drag factor
+            let advice = null;
+            if (dragFactor && dragFactor.delta < -0.01) {
+                const k = dragFactor.key;
+                if (k === 'participation') {
+                    advice = '💡 Совет: посещение всех активностей даже с нулевым счётом даёт бонус участия — это бесплатный прирост к доле.';
+                } else if (k === 'loyalty') {
+                    advice = '💡 Совет: множитель лояльности растёт автоматически каждую неделю. Просто оставайтесь в гильдии — разрыв сократится.';
+                } else if (['gvg', 'kvm', 'arcade', 'otherworld'].includes(k)) {
+                    advice = `💡 Совет: больше активности в ${VERDICT_FACTOR_LABELS[k]} — именно здесь наибольший потенциал для роста доли.`;
+                } else if (k === 'orders') {
+                    advice = '💡 Совет: Приказы имеют меньший вес, но при нулевом результате тянут вниз. Стоит уделить им несколько минут.';
+                }
+            }
+
+            // Border accent color: green if above average, red-ish if below
+            const accentColor = relDiff >= 0.005 ? '#52c87a' : relDiff <= -0.005 ? '#e05252' : '#c9a227';
+
+            return { summary, boost, drag, advice, accentColor };
+        }
+
+        // Renders the verdict cards grid inside #verdict-cards
+        function renderVerdictCards(allocs, s) {
+            const container = document.getElementById('verdict-cards');
+            if (!container) return;
+
+            const html = `<div class="verdict-grid">${allocs.map(r => {
+                const v = generateVerdict(r, allocs, s);
+                if (!v) return '';
+                const role = getRole(r.role);
+                const roleHTML = `<span class="role-badge"
+        style="background:${role.color}28;color:${role.color};border:1px solid ${role.color}44;font-size:0.68rem">
+        ${esc(role.name)}</span>`;
+                return `<div class="verdict-card" style="border-left-color:${v.accentColor}">
+        <div class="verdict-card-name">${esc(r.playerName)} ${roleHTML}</div>
+        <div class="verdict-boxes">${r.totalBoxes} 📦 · ${(r.proportion * 100).toFixed(1)}% пула</div>
+        <div class="verdict-line">${v.summary}</div>
+        ${v.boost ? `<div class="verdict-line verdict-boost">▲ ${v.boost}</div>` : ''}
+        ${v.drag ? `<div class="verdict-line verdict-drag">▼ ${v.drag}</div>` : ''}
+        ${v.advice ? `<div class="verdict-advice">${v.advice}</div>` : ''}
+      </div>`;
+            }).join('')
+                }</div>`;
+
+            container.innerHTML = html;
+        }
+
+        function toggleVerdicts() {
+            const section = document.getElementById('verdict-section');
+            const btn = document.getElementById('verdict-toggle-btn');
+            const isOpen = section.style.display !== 'none';
+            section.style.display = isOpen ? 'none' : 'block';
+            btn.textContent = isOpen ? '💬 Показать вердикты' : '💬 Скрыть вердикты';
+        }
+
+        // Simplified verdict for the share viewer — works from payload data only,
+        // no access to intermediate breakdown values or guild settings.
+        function generateShareVerdict(r, rows, totalBoxes) {
+            const n = rows.length;
+            if (n === 0) return null;
+
+            const avgProportion = rows.reduce((a, b) => a + b.proportion, 0) / n;
+            const relDiff = r.proportion - avgProportion;
+            const pctStr = (r.proportion * 100).toFixed(1);
+            const avgPctStr = (avgProportion * 100).toFixed(1);
+            const diffStr = Math.abs(relDiff * 100).toFixed(1);
+            const aboveBelow = relDiff >= 0 ? 'выше' : 'ниже';
+
+            const summary = `${esc(r.name)} — ${r.totalBoxes} 📦 (${pctStr}%), `
+                + `${diffStr}% ${aboveBelow} среднего (${avgPctStr}%).`;
+
+            // Find strongest and weakest activity by comparing to group average raw scores
+            const actDeltas = ACTIVITIES.map(a => ({
+                key: a.key, label: a.label,
+                delta: (r.scores?.[a.key] || 0)
+                    - rows.reduce((s, x) => s + (x.scores?.[a.key] || 0), 0) / n
+            })).filter(f => Math.abs(f.delta) > 0.1);
+
+            const best = actDeltas.reduce((b, f) => (!b || f.delta > b.delta) ? f : b, null);
+            const worst = actDeltas.reduce((w, f) => (!w || f.delta < w.delta) ? f : w, null);
+
+            const boost = best && best.delta > 0.5
+                ? `▲ Лучшая активность: <b>${esc(best.label)}</b> (${r.scores?.[best.key] || 0} очков, выше среднего на ${best.delta.toFixed(0)}).`
+                : null;
+            const drag = worst && worst.delta < -0.5
+                ? `▼ Слабее всего: <b>${esc(worst.label)}</b> (${r.scores?.[worst.key] || 0} очков, ниже среднего на ${Math.abs(worst.delta).toFixed(0)}).`
+                : null;
+
+            const accentColor = relDiff >= 0.005 ? '#52c87a' : relDiff <= -0.005 ? '#e05252' : '#c9a227';
+            return { summary, boost, drag, accentColor };
         }
 
         // ============================
