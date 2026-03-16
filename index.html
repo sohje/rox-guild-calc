@@ -82,7 +82,7 @@
         .theme-toggle {
             position: absolute;
             top: 18px;
-            right: 20px;
+            left: 16px;
             background: var(--bg3);
             border: 1px solid var(--border);
             color: var(--text-dim);
@@ -146,6 +146,109 @@
             height: 1px;
             background: linear-gradient(90deg, transparent, var(--gold-dim), var(--gold), var(--gold-dim), transparent);
             margin-top: 18px;
+        }
+
+        .header-actions {
+            position: absolute;
+            top: 18px;
+            right: 16px;
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+
+        /* PLAYER PROFILE MODAL */
+        .profile-header {
+            display: flex;
+            align-items: flex-start;
+            gap: 18px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .profile-avatar {
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Cinzel', serif;
+            font-size: 1.4rem;
+            font-weight: 700;
+            flex-shrink: 0;
+            border: 2px solid;
+        }
+
+        .profile-meta {
+            flex: 1;
+            min-width: 180px;
+        }
+
+        .profile-name {
+            font-family: 'Cinzel', serif;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text-bright);
+            margin-bottom: 4px;
+        }
+
+        .profile-stats-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 18px;
+            margin-top: 14px;
+            margin-bottom: 18px;
+        }
+
+        .profile-stat {
+            background: var(--bg3);
+            border: 1px solid var(--border);
+            padding: 10px 14px;
+            min-width: 100px;
+            flex: 1;
+        }
+
+        .profile-stat-label {
+            font-size: 0.7rem;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.07em;
+            margin-bottom: 4px;
+        }
+
+        .profile-stat-value {
+            font-family: 'Cinzel', serif;
+            font-size: 1.1rem;
+            color: var(--gold);
+            font-weight: 600;
+        }
+
+        .profile-chart-wrap {
+            background: var(--bg3);
+            border: 1px solid var(--border);
+            padding: 14px;
+            margin-bottom: 18px;
+        }
+
+        .profile-achievements {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 6px;
+        }
+
+        /* Clickable player name */
+        .player-link {
+            cursor: pointer;
+            color: var(--text-bright);
+            transition: color 0.15s;
+        }
+
+        .player-link:hover {
+            color: var(--gold-light);
+            text-decoration: underline;
+            text-underline-offset: 3px;
         }
 
         .header-title {
@@ -930,6 +1033,13 @@
         </button>
         <div class="header-title">⚔ Guild Box Distributor ⚔</div>
         <div class="header-sub">Ragnarok X: Next Generation — <span id="guildNameDisplay">Моя Гильдия</span></div>
+        <div class="header-actions">
+            <button class="btn btn-outline btn-sm" onclick="exportState()"
+                title="Скачать резервную копию данных гильдии">⬇ Экспорт</button>
+            <button class="btn btn-outline btn-sm" onclick="document.getElementById('import-file').click()"
+                title="Загрузить данные из файла">⬆ Импорт</button>
+            <input type="file" id="import-file" accept=".json" style="display:none" onchange="importState(event)">
+        </div>
     </header>
 
     <div class="tabs">
@@ -1049,7 +1159,8 @@
                     <div class="section-title">Система дефицита</div>
                     <div class="tip">Отслеживает, насколько каждый игрок недополучил коробок по сравнению с его
                         «заслуженной долей» за все прошлые недели. Помогает компенсировать накопленную несправедливость.
-                        <b>Вес 0</b> = система отключена. <b>Вес 1</b> = полная компенсация.</div>
+                        <b>Вес 0</b> = система отключена. <b>Вес 1</b> = полная компенсация.
+                    </div>
                     <div class="field-row">
                         <label>Вес дефицита</label>
                         <input type="range" id="cfg-deficitWeight" min="0" max="1" step="0.05" value="0.4"
@@ -1077,8 +1188,8 @@
                     <button class="btn btn-outline btn-sm" onclick="addBoxType()">+ Добавить тип</button>
                     <hr style="border-color:var(--border);margin:12px 0">
                     <div class="tip"><b>Смешивание (blend):</b> Насколько сильно коробка привязана к своей активности.
-                        При 100% — чисто по очкам своей активности. При 0% — как раньше, по общему счёту. Значение 70%
-                        рекомендуется: активность имеет приоритет, но общий вклад смягчает крайности для саппортов.
+                        При 100% — чисто по очкам своей активности. При 0% — как раньше, по общему счёту. Значение 70%:
+                        активность имеет приоритет, но общий вклад смягчает крайности для саппортов.
                     </div>
                     <div class="field-row">
                         <label>Привязка к активности</label>
@@ -1359,6 +1470,17 @@
             <div id="histModalContent"></div>
             <div class="modal-actions">
                 <button class="btn btn-outline" onclick="closeHistModal()">Закрыть</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- PLAYER PROFILE MODAL -->
+    <div class="modal-overlay" id="playerProfileModal">
+        <div class="modal" style="max-width:720px;width:96%">
+            <div class="modal-title" id="profileModalTitle">Профиль игрока</div>
+            <div id="profileModalContent"></div>
+            <div class="modal-actions">
+                <button class="btn btn-outline" onclick="closePlayerProfile()">Закрыть</button>
             </div>
         </div>
     </div>
@@ -1661,7 +1783,7 @@
                 const loyaltyBonus = Math.min(weeks * s.loyaltyIncrement, s.maxLoyaltyBonus);
                 const loyaltyMult = (1 + loyaltyBonus).toFixed(2);
                 return `<tr>
-      <td><b>${esc(p.name)}</b></td>
+      <td><b class="player-link" onclick="openPlayerProfile(${p.id})">${esc(p.name)}</b></td>
       <td>${roleBadgeHTML(p.role)}</td>
       <td>${esc(p.class || '—')}</td>
       <td style="color:var(--text-dim);font-size:0.88rem">${fmtDate(p.joinDate)}</td>
@@ -2141,7 +2263,7 @@
 
                 return `<tr>
       <td>${i + 1}</td>
-      <td><b>${esc(r.playerName)}</b><br><span style="font-size:0.76rem;color:var(--text-dim)">${esc(r.playerClass)}</span></td>
+      <td><b class="player-link" onclick="openPlayerProfile(${r.playerId})">${esc(r.playerName)}</b><br><span style="font-size:0.76rem;color:var(--text-dim)">${esc(r.playerClass)}</span></td>
       <td>${roleBadgeHTML(r.role)}</td>
       ${actCells}
       <td class="score-breakdown" data-tip-id="${partTipId}">${r.participatedCount}/4 <span class="tip-arrow">→</span> <span style="color:var(--gold)">${r.participationBonus.toFixed(2)}</span></td>
@@ -2224,15 +2346,37 @@
             const empty = document.getElementById('history-empty');
             if (!savedWeeks.length) { container.innerHTML = ''; empty.style.display = 'block'; return; }
             empty.style.display = 'none';
+
             container.innerHTML = savedWeeks.slice().reverse().map(w => {
                 const totalBoxes = w.distribution.reduce((s, d) => s + d.boxes, 0);
-                const topPlayer = [...w.distribution].sort((a, b) => b.boxes - a.boxes)[0];
-                return `<div class="hist-item" onclick="showHistDetail(${w.id})">
-      <div>
+                const sorted = [...w.distribution].sort((a, b) => b.boxes - a.boxes);
+                const top3 = sorted.slice(0, 3);
+
+                const medals = ['🥇', '🥈', '🥉'];
+                const top3HTML = top3.map((d, i) => {
+                    const pct = ((d.receivedProportion || 0) * 100).toFixed(1);
+                    return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+        <span style="font-size:0.9rem;width:20px">${medals[i]}</span>
+        <span class="player-link" style="font-size:0.85rem"
+              onclick="event.stopPropagation();openPlayerProfile(${d.playerId})">
+          ${esc(d.playerName)}
+        </span>
+        <span style="color:var(--gold);font-size:0.82rem;margin-left:auto">${d.boxes} 📦</span>
+        <span style="color:var(--text-dim);font-size:0.75rem;min-width:38px;text-align:right">${pct}%</span>
+      </div>`;
+                }).join('');
+
+                return `<div class="hist-item">
+      <div style="flex:1" onclick="showHistDetail(${w.id})" style="cursor:pointer">
         <div class="hist-label">${esc(w.label)}</div>
-        <div class="hist-meta">Участников: ${w.distribution.length} · Коробок: ${totalBoxes} · Лучший: ${esc(topPlayer?.playerName || '—')} (${topPlayer?.boxes || 0} 📦)</div>
+        <div class="hist-meta" style="margin-bottom:10px">
+          ${fmtDate(w.date)} · ${w.distribution.length} участников · ${totalBoxes} коробок
+        </div>
+        <div style="padding-left:2px">${top3HTML}</div>
       </div>
-      <span style="color:var(--gold-dim);font-size:1.2rem">›</span>
+      <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;margin-left:12px;flex-shrink:0">
+        <button class="btn btn-outline btn-sm" onclick="showHistDetail(${w.id})">Детали ›</button>
+      </div>
     </div>`;
             }).join('');
         }
@@ -2256,7 +2400,7 @@
                 }).join('');
                 return `<tr>
       <td>${i + 1}</td>
-      <td><b>${esc(d.playerName)}</b></td>
+      <td><b class="player-link" onclick="closeHistModal();openPlayerProfile(${d.playerId})">${esc(d.playerName)}</b></td>
       <td>${roleBadgeHTML(d.role)}</td>
       <td>${d.finalScore?.toFixed(3) || '—'}</td>
       <td>${((d.receivedProportion || 0) * 100).toFixed(1)}%</td>
@@ -2286,6 +2430,9 @@
         // Close modals on overlay click
         document.getElementById('playerModal').addEventListener('click', function (e) { if (e.target === this) closePlayerModal(); });
         document.getElementById('historyModal').addEventListener('click', function (e) { if (e.target === this) closeHistModal(); });
+        document.getElementById('playerProfileModal').addEventListener('click', function (e) { if (e.target === this) closePlayerProfile(); });
+        document.getElementById('shareModal').addEventListener('click', function (e) { if (e.target === this) closeShareModal(); });
+        document.getElementById('shareViewerModal').addEventListener('click', function (e) { if (e.target === this) closeShareViewer(); });
 
         // ============================
         // BOX TYPES EDITOR
@@ -2866,6 +3013,243 @@ exact = ${(r.proportion * 100).toFixed(2)}% × ${totalBoxes}
             document.getElementById('shareViewerModal').classList.remove('open');
             // Remove fragment so reloading the page doesn't re-open the viewer
             history.replaceState(null, '', location.pathname + location.search);
+        }
+
+        // ============================
+        // EXPORT / IMPORT
+        // ============================
+        function exportState() {
+            const name = (STATE.guild?.name || 'guild').replace(/\s+/g, '-').toLowerCase();
+            const date = new Date().toISOString().slice(0, 10);
+            const filename = `gbd-${name}-${date}.json`;
+            const json = JSON.stringify(STATE, null, 2);
+            const blob = new Blob([json], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = filename; a.click();
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+        }
+
+        function importState(event) {
+            const file = event.target.files?.[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = e => {
+                try {
+                    const parsed = JSON.parse(e.target.result);
+                    // Basic structure validation
+                    if (!parsed || typeof parsed !== 'object' || !Array.isArray(parsed.players)) {
+                        alert('Неверный формат файла. Ожидается файл экспорта Guild Box Distributor.');
+                        return;
+                    }
+                    if (!confirm(`Загрузить данные гильдии «${parsed.guild?.name || '?'}»?\nТекущие данные будут заменены.`)) return;
+
+                    // Run through the same migration pipeline as load()
+                    STATE = parsed;
+                    if (!STATE.boxTypes || !Array.isArray(STATE.boxTypes) || !STATE.boxTypes.length)
+                        STATE.boxTypes = DEFAULT_BOX_TYPES.map(b => ({ ...b }));
+                    if (STATE.settings.blendRatio === undefined) STATE.settings.blendRatio = 0.7;
+                    if (!STATE.roles || !Array.isArray(STATE.roles) || !STATE.roles.length) {
+                        const oldMult = STATE.settings?.roleMultipliers || {};
+                        STATE.roles = DEFAULT_ROLES.map(r => {
+                            const k = Object.keys(oldMult).find(k => k.toLowerCase() === r.name.toLowerCase());
+                            return { ...r, multiplier: k ? oldMult[k] : r.multiplier };
+                        });
+                    }
+                    STATE.roles.forEach((r, i) => { if (!r.color) r.color = DEFAULT_ROLES[i % DEFAULT_ROLES.length].color; });
+                    if (STATE.settings?.roleMultipliers) delete STATE.settings.roleMultipliers;
+                    STATE.players.forEach(p => {
+                        if (p.role && !p.role.startsWith('role_')) {
+                            const match = STATE.roles.find(r => r.name === p.role || r.id === p.role);
+                            p.role = match ? match.id : (STATE.roles[0]?.id || 'role_dps');
+                        }
+                        if (!p.joinDate && p.weeks !== undefined) {
+                            p.joinDate = new Date(Date.now() - (p.weeks || 0) * 7 * 24 * 3600 * 1000).toISOString();
+                        }
+                    });
+
+                    save();
+                    // Refresh entire UI
+                    loadSettingsUI();
+                    registerHeaderTips();
+                    document.getElementById('guildNameDisplay').textContent = STATE.guild.name;
+                    renderPlayers();
+                    // Reset analytics chart state so it re-seeds on next open
+                    _chartSelected.clear();
+                    _chartInstance = null;
+                } catch (err) {
+                    alert('Ошибка при чтении файла: ' + err.message);
+                } finally {
+                    event.target.value = ''; // reset file input so same file can be re-imported
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // ============================
+        // PLAYER PROFILE
+        // ============================
+        let _profileChartInstance = null;
+
+        function openPlayerProfile(playerId) {
+            const player = STATE.players.find(p => p.id === playerId);
+            // Collect all distribution entries for this player across saved weeks
+            const savedWeeks = STATE.weeks
+                .filter(w => w.distribution?.length)
+                .sort((a, b) => new Date(a.date) - new Date(b.date));
+            const history = savedWeeks
+                .map(w => ({ week: w, dist: w.distribution.find(d => d.playerId === playerId) }))
+                .filter(h => h.dist);
+
+            // Fallback name from history if player was deleted
+            const playerName = player?.name
+                || history[0]?.dist?.playerName
+                || `#${playerId}`;
+            const role = player ? getRole(player.role) : null;
+            const weeks = player ? playerWeeks(player) : '?';
+
+            document.getElementById('profileModalTitle').textContent = playerName;
+
+            // ── Stats ──
+            const totalBoxes = history.reduce((s, h) => s + h.dist.boxes, 0);
+            const avgPct = history.length
+                ? (history.reduce((s, h) => s + (h.dist.receivedProportion || 0), 0) / history.length * 100).toFixed(1)
+                : '—';
+            const bestWeek = history.reduce((best, h) =>
+                (!best || h.dist.boxes > best.dist.boxes) ? h : best, null);
+            const lastTrend = history.length >= 2
+                ? (history[history.length - 1].dist.receivedProportion || 0) - (history[history.length - 2].dist.receivedProportion || 0)
+                : null;
+            const trendStr = lastTrend === null ? '—'
+                : lastTrend > 0.001 ? `▲ +${(lastTrend * 100).toFixed(1)}%`
+                    : lastTrend < -0.001 ? `▼ ${(lastTrend * 100).toFixed(1)}%`
+                        : '→ стабильно';
+            const trendColor = lastTrend === null ? 'var(--text-dim)'
+                : lastTrend > 0.001 ? '#52c87a' : lastTrend < -0.001 ? '#e05252' : 'var(--gold)';
+
+            // ── Achievements ──
+            const allAchievements = computeAchievements();
+            const earned = allAchievements[playerId] || [];
+
+            // ── Role avatar ──
+            const roleColor = role?.color || '#c9a227';
+            const initials = playerName.slice(0, 2).toUpperCase();
+            const avatarHTML = `<div class="profile-avatar"
+    style="background:${roleColor}22;color:${roleColor};border-color:${roleColor}66">${initials}</div>`;
+
+            const roleHTML = role
+                ? `<span class="role-badge" style="background:${role.color}28;color:${role.color};border:1px solid ${role.color}44">${esc(role.name)}</span>`
+                : '';
+            const classHTML = player?.class
+                ? `<span style="color:var(--text-dim);font-size:0.82rem">${esc(player.class)}</span>`
+                : '';
+            const joinHTML = player?.joinDate
+                ? `<span style="color:var(--text-dim);font-size:0.82rem">Вступил: ${fmtDate(player.joinDate)}</span>`
+                : '';
+
+            const badgesHTML = earned.length
+                ? earned.map(a =>
+                    `<span class="achievement-badge"
+               style="color:${a.color};border-color:${a.color}44;background:${a.color}11"
+               title="${esc(a.desc)}">${a.emoji} ${esc(a.label)}</span>`
+                ).join('')
+                : `<span style="color:var(--text-dim);font-size:0.8rem;font-style:italic">Достижений пока нет</span>`;
+
+            document.getElementById('profileModalContent').innerHTML = `
+    <div class="profile-header">
+      ${avatarHTML}
+      <div class="profile-meta">
+        <div class="profile-name">${esc(playerName)}</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:4px">
+          ${roleHTML} ${classHTML} ${joinHTML}
+        </div>
+        <div style="margin-top:6px;color:var(--text-dim);font-size:0.8rem">${weeks} недель в гильдии · ${history.length} недель в истории</div>
+      </div>
+    </div>
+
+    <div class="profile-stats-row">
+      <div class="profile-stat">
+        <div class="profile-stat-label">Всего коробок</div>
+        <div class="profile-stat-value">${totalBoxes} 📦</div>
+      </div>
+      <div class="profile-stat">
+        <div class="profile-stat-label">Средняя доля</div>
+        <div class="profile-stat-value">${avgPct}%</div>
+      </div>
+      <div class="profile-stat">
+        <div class="profile-stat-label">Лучшая неделя</div>
+        <div class="profile-stat-value">${bestWeek ? bestWeek.dist.boxes + ' 📦' : '—'}</div>
+        ${bestWeek ? `<div style="font-size:0.7rem;color:var(--text-dim);margin-top:2px">${esc(bestWeek.week.label)}</div>` : ''}
+      </div>
+      <div class="profile-stat">
+        <div class="profile-stat-label">Тренд</div>
+        <div class="profile-stat-value" style="color:${trendColor};font-size:0.95rem">${trendStr}</div>
+      </div>
+    </div>
+
+    ${history.length >= 2 ? `
+    <div class="profile-chart-wrap">
+      <div style="font-size:0.75rem;color:var(--text-dim);margin-bottom:10px;font-family:'Cinzel',serif;letter-spacing:0.05em">ДИНАМИКА ДОЛИ ПО НЕДЕЛЯМ</div>
+      <canvas id="profile-chart" height="80"></canvas>
+    </div>` : `
+    <div style="color:var(--text-dim);font-size:0.82rem;font-style:italic;margin-bottom:16px">
+      Нужно минимум 2 сохранённые недели для графика.
+    </div>`}
+
+    <div style="margin-bottom:8px;font-size:0.75rem;color:var(--text-dim);font-family:'Cinzel',serif;letter-spacing:0.05em">ДОСТИЖЕНИЯ</div>
+    <div class="profile-achievements">${badgesHTML}</div>`;
+
+            // ── Draw profile mini-chart ──
+            if (history.length >= 2) {
+                if (_profileChartInstance) { _profileChartInstance.destroy(); _profileChartInstance = null; }
+                const isLight = document.documentElement.classList.contains('light');
+                const gridClr = isLight ? 'rgba(0,0,0,0.07)' : 'rgba(255,255,255,0.06)';
+                const tickClr = isLight ? '#7a7060' : '#8a8070';
+                const chartCanvas = document.getElementById('profile-chart');
+                if (chartCanvas) {
+                    _profileChartInstance = new Chart(chartCanvas, {
+                        type: 'line',
+                        data: {
+                            labels: history.map(h => h.week.label),
+                            datasets: [{
+                                label: 'Доля %',
+                                data: history.map(h => parseFloat(((h.dist.receivedProportion || 0) * 100).toFixed(2))),
+                                borderColor: roleColor,
+                                backgroundColor: roleColor + '22',
+                                pointBackgroundColor: roleColor,
+                                pointRadius: 4, pointHoverRadius: 6,
+                                borderWidth: 2, tension: 0.35, fill: true
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            plugins: {
+                                legend: { display: false },
+                                tooltip: {
+                                    backgroundColor: isLight ? '#ffffff' : '#111622',
+                                    borderColor: roleColor + '88', borderWidth: 1,
+                                    titleColor: roleColor,
+                                    bodyColor: isLight ? '#2c2620' : '#d8cdb8',
+                                    titleFont: { family: "'Cinzel', serif", size: 11 },
+                                    bodyFont: { family: "'Crimson Pro', serif", size: 12 },
+                                    callbacks: { label: ctx => `${ctx.raw.toFixed(1)}%` }
+                                }
+                            },
+                            scales: {
+                                x: { grid: { color: gridClr }, ticks: { color: tickClr, font: { size: 10 }, maxRotation: 30 } },
+                                y: { grid: { color: gridClr }, ticks: { color: tickClr, font: { size: 10 }, callback: v => v + '%' }, beginAtZero: true }
+                            }
+                        }
+                    });
+                }
+            }
+
+            document.getElementById('playerProfileModal').classList.add('open');
+        }
+
+        function closePlayerProfile() {
+            document.getElementById('playerProfileModal').classList.remove('open');
+            if (_profileChartInstance) { _profileChartInstance.destroy(); _profileChartInstance = null; }
         }
 
         // ============================
