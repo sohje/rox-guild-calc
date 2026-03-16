@@ -1159,8 +1159,7 @@
                     <div class="section-title">Система дефицита</div>
                     <div class="tip">Отслеживает, насколько каждый игрок недополучил коробок по сравнению с его
                         «заслуженной долей» за все прошлые недели. Помогает компенсировать накопленную несправедливость.
-                        <b>Вес 0</b> = система отключена. <b>Вес 1</b> = полная компенсация.
-                    </div>
+                        <b>Вес 0</b> = система отключена. <b>Вес 1</b> = полная компенсация.</div>
                     <div class="field-row">
                         <label>Вес дефицита</label>
                         <input type="range" id="cfg-deficitWeight" min="0" max="1" step="0.05" value="0.4"
@@ -1188,8 +1187,8 @@
                     <button class="btn btn-outline btn-sm" onclick="addBoxType()">+ Добавить тип</button>
                     <hr style="border-color:var(--border);margin:12px 0">
                     <div class="tip"><b>Смешивание (blend):</b> Насколько сильно коробка привязана к своей активности.
-                        При 100% — чисто по очкам своей активности. При 0% — как раньше, по общему счёту. Значение 70%:
-                        активность имеет приоритет, но общий вклад смягчает крайности для саппортов.
+                        При 100% — чисто по очкам своей активности. При 0% — как раньше, по общему счёту. Значение 70%
+                        рекомендуется: активность имеет приоритет, но общий вклад смягчает крайности для саппортов.
                     </div>
                     <div class="field-row">
                         <label>Привязка к активности</label>
@@ -1197,6 +1196,35 @@
                             oninput="document.getElementById('cfgv-blendRatio').textContent=(parseFloat(this.value)*100).toFixed(0)+'%'">
                         <span class="val" id="cfgv-blendRatio">70%</span>
                     </div>
+                </div>
+            </div>
+
+            <!-- Thresholds & Penalties -->
+            <div class="setting-group">
+                <div class="section-title">Пороги и штрафы</div>
+                <div class="tip">Если игрок не достигает минимального порога по активности, его итоговый счёт умножается
+                    на штрафной коэффициент. 0% = лишить всех коробок, 100% = без штрафа. Штрафы перемножаются если
+                    нарушены несколько порогов.</div>
+
+                <div id="thresholds-editor" style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px">
+                </div>
+
+                <hr style="border-color:var(--border);margin:12px 0">
+                <div style="font-family:'Cinzel',serif;font-size:0.8rem;color:var(--gold-dim);margin-bottom:8px">⚠ GvG
+                    Warn штраф</div>
+                <div class="tip" style="margin-bottom:10px">Применяется когда выставлен флаг «warn» в таблице недели —
+                    игрок игнорировал приказы или нарушал дисциплину.</div>
+                <div class="field-row" style="align-items:center;gap:12px;flex-wrap:wrap">
+                    <label style="display:flex;align-items:center;gap:6px;min-width:120px">
+                        <input type="checkbox" id="cfg-warnEnabled"> Включить
+                    </label>
+                    <label style="flex:1;min-width:200px">Штраф (% от finalScore остаётся)
+                        <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
+                            <input type="range" id="cfg-warnPenalty" min="0" max="1" step="0.05" value="0.5"
+                                oninput="document.getElementById('cfgv-warnPenalty').textContent=Math.round(parseFloat(this.value)*100)+'%'">
+                            <span class="val" id="cfgv-warnPenalty">50%</span>
+                        </div>
+                    </label>
                 </div>
             </div>
 
@@ -1492,7 +1520,6 @@
 
         // Default box types — one per activity that awards boxes
         const DEFAULT_BOX_TYPES = [
-            { id: 'bt_gvg', name: 'GvG Box', activityKey: 'gvg', color: '#e05252' },
             { id: 'bt_kvm', name: 'KvM Box', activityKey: 'kvm', color: '#e07a52' },
             { id: 'bt_arcade', name: 'Arcade Box', activityKey: 'arcade', color: '#c9a227' },
             { id: 'bt_otherworld', name: 'Otherworld Box', activityKey: 'otherworld', color: '#52a0e0' },
@@ -1508,7 +1535,7 @@
         let STATE = {
             guild: { name: 'Моя Гильдия' },
             roles: DEFAULT_ROLES.map(r => ({ ...r })),
-            boxTypes: DEFAULT_BOX_TYPES.map(b => ({ ...b })),  // configurable box type list
+            boxTypes: DEFAULT_BOX_TYPES.map(b => ({ ...b })),
             settings: {
                 activityWeights: { gvg: 2.0, kvm: 2.0, arcade: 1.5, otherworld: 1.5, orders: 0.5 },
                 kvmMode: 'individual',
@@ -1517,10 +1544,18 @@
                 maxLoyaltyBonus: 0.3,
                 deficitWeight: 0.4,
                 maxMgmt: 5,
-                // blendRatio: how much a box type's distribution uses its own activity score vs the global score.
-                // 1.0 = purely by own activity, 0.0 = purely by global score (old behaviour).
-                // Default 0.7: mostly activity-specific but global score still buffers support classes.
-                blendRatio: 0.7
+                blendRatio: 0.7,
+                // Penalty thresholds: if a player scores below minScore on an activity,
+                // their finalScore is multiplied by penaltyMult (0 = lose all boxes, 1 = no penalty)
+                thresholds: {
+                    gvg: { enabled: false, minScore: 600, penaltyMult: 0.0 },
+                    kvm: { enabled: false, minScore: 25, penaltyMult: 0.0 },
+                    arcade: { enabled: false, minScore: 0, penaltyMult: 0.5 },
+                    otherworld: { enabled: false, minScore: 0, penaltyMult: 0.5 },
+                    orders: { enabled: false, minScore: 0, penaltyMult: 0.5 },
+                },
+                // GvG Warn penalty: applied when the warn flag is set for a player in a week
+                gvgWarnPenalty: { enabled: true, penaltyMult: 0.5 }
             },
             players: [],
             weeks: [],
@@ -1528,12 +1563,14 @@
             _nextId: 1
         };
 
+        // hasParticipation: true  → manual checkbox shown in weekly table
+        // participationByScore: true → counted as "participated" automatically when score > 0
         const ACTIVITIES = [
-            { key: 'gvg', label: 'GvG' },
-            { key: 'kvm', label: 'KvM' },
-            { key: 'arcade', label: 'Аркада' },
-            { key: 'otherworld', label: 'Иномир' },
-            { key: 'orders', label: 'Приказы' }
+            { key: 'gvg', label: 'GvG', hasParticipation: false, participationByScore: true },
+            { key: 'kvm', label: 'KvM', hasParticipation: false, participationByScore: true },
+            { key: 'arcade', label: 'Аркада', hasParticipation: false, participationByScore: true },
+            { key: 'otherworld', label: 'Иномир', hasParticipation: true, participationByScore: false },
+            { key: 'orders', label: 'Приказы', hasParticipation: false, participationByScore: false },
         ];
 
         // ============================
@@ -1589,6 +1626,20 @@
                         p.joinDate = approxJoin.toISOString();
                     }
                 });
+
+                // ── MIGRATION: penalty thresholds and gvgWarnPenalty ──
+                if (!STATE.settings.thresholds) {
+                    STATE.settings.thresholds = {
+                        gvg: { enabled: false, minScore: 600, penaltyMult: 0.0 },
+                        kvm: { enabled: false, minScore: 25, penaltyMult: 0.0 },
+                        arcade: { enabled: false, minScore: 0, penaltyMult: 0.5 },
+                        otherworld: { enabled: false, minScore: 0, penaltyMult: 0.5 },
+                        orders: { enabled: false, minScore: 0, penaltyMult: 0.5 },
+                    };
+                }
+                if (!STATE.settings.gvgWarnPenalty) {
+                    STATE.settings.gvgWarnPenalty = { enabled: true, penaltyMult: 0.5 };
+                }
             } catch (e) { }
         }
         function genId() { return STATE._nextId++; }
@@ -1628,6 +1679,55 @@
         // ============================
         // SETTINGS
         // ============================
+        function renderThresholdsEditor() {
+            const container = document.getElementById('thresholds-editor');
+            if (!container) return;
+            const s = STATE.settings;
+            const thresholds = s.thresholds || {};
+
+            container.innerHTML = ACTIVITIES
+                .filter(a => a.key !== 'orders') // orders has no meaningful min threshold
+                .map(a => {
+                    const t = thresholds[a.key] || { enabled: false, minScore: 0, penaltyMult: 0.5 };
+                    const pct = Math.round((t.penaltyMult ?? 0.5) * 100);
+                    return `<div style="background:var(--bg3);border:1px solid var(--border);padding:12px;border-left:3px solid ${a.key === 'gvg' ? '#e05252' : a.key === 'kvm' ? '#e07a52' : a.key === 'arcade' ? '#c9a227' : '#52a0e0'}">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap">
+          <label style="display:flex;align-items:center;gap:6px;font-family:'Cinzel',serif;font-size:0.8rem;color:var(--text-bright);min-width:120px">
+            <input type="checkbox" id="thr-enabled-${a.key}" ${t.enabled ? 'checked' : ''}
+                   onchange="onThresholdToggle('${a.key}')">
+            ${a.label}
+          </label>
+          <div id="thr-fields-${a.key}" style="${t.enabled ? '' : 'opacity:0.35;pointer-events:none'}display:flex;align-items:center;gap:14px;flex-wrap:wrap;flex:1">
+            <label style="font-size:0.82rem;color:var(--text-dim);display:flex;align-items:center;gap:6px">
+              Мин. очков:
+              <input type="number" id="thr-min-${a.key}" value="${t.minScore}" min="0" step="1"
+                     style="width:80px;padding:4px 6px">
+            </label>
+            <label style="font-size:0.82rem;color:var(--text-dim);flex:1;min-width:180px">
+              Штраф (остаётся %):
+              <div style="display:flex;align-items:center;gap:8px;margin-top:2px">
+                <input type="range" id="thr-mult-${a.key}" min="0" max="1" step="0.05" value="${t.penaltyMult ?? 0.5}"
+                       oninput="document.getElementById('thrv-mult-${a.key}').textContent=Math.round(parseFloat(this.value)*100)+'%'">
+                <span class="val" id="thrv-mult-${a.key}">${pct}%</span>
+              </div>
+            </label>
+          </div>
+        </div>
+        <div id="thr-hint-${a.key}" style="font-size:0.75rem;color:${t.penaltyMult === 0 ? '#e05252' : 'var(--text-dim)'}">
+          ${t.enabled ? (t.penaltyMult === 0 ? '⛔ Игрок лишается всех коробок' : `Итоговый счёт × ${pct}%`) : 'Порог отключён'}
+        </div>
+      </div>`;
+                }).join('');
+        }
+
+        function onThresholdToggle(actKey) {
+            const enabled = document.getElementById(`thr-enabled-${actKey}`)?.checked;
+            const fields = document.getElementById(`thr-fields-${actKey}`);
+            const hint = document.getElementById(`thr-hint-${actKey}`);
+            if (fields) fields.style.cssText = `${enabled ? '' : 'opacity:0.35;pointer-events:none;'}display:flex;align-items:center;gap:14px;flex-wrap:wrap;flex:1`;
+            if (hint) hint.textContent = enabled ? 'Активно' : 'Порог отключён';
+        }
+
         function loadSettingsUI() {
             const s = STATE.settings;
             document.getElementById('cfg-guildName').value = STATE.guild.name;
@@ -1649,8 +1749,14 @@
             const br = s.blendRatio ?? 0.7;
             document.getElementById('cfg-blendRatio').value = br;
             document.getElementById('cfgv-blendRatio').textContent = Math.round(br * 100) + '%';
+            // Warn penalty
+            const wp = s.gvgWarnPenalty || { enabled: true, penaltyMult: 0.5 };
+            document.getElementById('cfg-warnEnabled').checked = wp.enabled;
+            document.getElementById('cfg-warnPenalty').value = wp.penaltyMult;
+            document.getElementById('cfgv-warnPenalty').textContent = Math.round(wp.penaltyMult * 100) + '%';
             renderRolesEditor();
             renderBoxTypesEditor();
+            renderThresholdsEditor();
         }
 
         function saveSettings() {
@@ -1668,6 +1774,20 @@
             s.deficitWeight = parseFloat(document.getElementById('cfg-deficitWeight').value);
             s.maxMgmt = parseFloat(document.getElementById('cfg-maxMgmt').value);
             s.blendRatio = parseFloat(document.getElementById('cfg-blendRatio').value);
+            // Warn penalty
+            s.gvgWarnPenalty = {
+                enabled: document.getElementById('cfg-warnEnabled').checked,
+                penaltyMult: parseFloat(document.getElementById('cfg-warnPenalty').value)
+            };
+            // Thresholds
+            if (!s.thresholds) s.thresholds = {};
+            for (const a of ACTIVITIES.filter(a => a.key !== 'orders')) {
+                s.thresholds[a.key] = {
+                    enabled: document.getElementById(`thr-enabled-${a.key}`)?.checked || false,
+                    minScore: parseFloat(document.getElementById(`thr-min-${a.key}`)?.value) || 0,
+                    penaltyMult: parseFloat(document.getElementById(`thr-mult-${a.key}`)?.value) ?? 0.5,
+                };
+            }
             save();
             const msg = document.getElementById('settings-saved');
             msg.style.display = 'block';
@@ -1684,7 +1804,15 @@
                 maxLoyaltyBonus: 0.3,
                 deficitWeight: 0.4,
                 maxMgmt: 5,
-                blendRatio: 0.7
+                blendRatio: 0.7,
+                thresholds: {
+                    gvg: { enabled: false, minScore: 600, penaltyMult: 0.0 },
+                    kvm: { enabled: false, minScore: 25, penaltyMult: 0.0 },
+                    arcade: { enabled: false, minScore: 0, penaltyMult: 0.5 },
+                    otherworld: { enabled: false, minScore: 0, penaltyMult: 0.5 },
+                    orders: { enabled: false, minScore: 0, penaltyMult: 0.5 },
+                },
+                gvgWarnPenalty: { enabled: true, penaltyMult: 0.5 }
             };
             STATE.roles = DEFAULT_ROLES.map(r => ({ ...r }));
             STATE.boxTypes = DEFAULT_BOX_TYPES.map(b => ({ ...b }));
@@ -1941,12 +2069,20 @@
             }
             const s = STATE.settings;
 
-            let html = `<div class="alert alert-info">Введите очки каждого участника за эту неделю. Отметьте «✓» активности, в которых участвовал игрок (даже с нулевым счётом) — это даёт бонус за присутствие. Нажмите «Сохранить» после ввода.</div>`;
+            let html = `<div class="alert alert-info">Введите очки каждого участника. Для GvG, KvM и Аркады участие засчитывается автоматически при наличии очков. Для Иномира — отметьте вручную. Нажмите «Сохранить» после ввода.</div>`;
 
             html += `<div class="tbl-wrap"><table>
     <thead><tr>
       <th>Игрок</th><th>Роль</th>
-      ${ACTIVITIES.map(a => `<th>${a.label}<br><span style="font-size:0.68rem;font-weight:400;color:var(--text-dim)">очки / участие</span></th>`).join('')}
+      ${ACTIVITIES.map(a => {
+                const sub = a.hasParticipation
+                    ? 'очки / участие'
+                    : a.participationByScore
+                        ? 'очки'
+                        : 'очки';
+                const extra = a.key === 'gvg' ? ' / ⚠ warn' : '';
+                return `<th>${a.label}${extra}<br><span style="font-size:0.68rem;font-weight:400;color:var(--text-dim)">${sub}</span></th>`;
+            }).join('')}
       <th>Упр. бонус<br><span style="font-size:0.68rem;font-weight:400;color:var(--text-dim)">0–${s.maxMgmt}</span></th>
     </tr></thead><tbody>`;
 
@@ -1954,18 +2090,32 @@
                 const entry = week.entries.find(e => e.playerId === p.id) || {};
                 const scores = entry.scores || {};
                 const participated = entry.participated || {};
+                const gvgWarn = entry.gvgWarn || false;
                 html += `<tr data-player="${p.id}">
       <td><b>${esc(p.name)}</b></td>
       <td>${roleBadgeHTML(p.role)}</td>`;
 
                 for (const act of ACTIVITIES) {
                     const scoreVal = scores[act.key] || 0;
-                    const partVal = participated[act.key] ? 'checked' : '';
-                    const showPart = act.key !== 'orders'; // orders don't have "participation" checkbox
-                    html += `<td style="white-space:nowrap">
-        <input type="number" class="score-input" data-pid="${p.id}" data-act="${act.key}" value="${scoreVal}" min="0" step="1" onchange="updateEntry(${week.id},${p.id},'score','${act.key}',this.value)">
-        ${showPart ? `<br><label style="font-size:0.76rem;cursor:pointer;margin-top:4px;display:inline-flex;align-items:center;gap:3px"><input type="checkbox" ${partVal} onchange="updateEntry(${week.id},${p.id},'participated','${act.key}',this.checked)"> Участ.</label>` : ''}
-      </td>`;
+                    let cellContent = `<input type="number" class="score-input" data-pid="${p.id}" data-act="${act.key}"
+        value="${scoreVal}" min="0" step="1"
+        onchange="updateEntry(${week.id},${p.id},'score','${act.key}',this.value)">`;
+
+                    if (act.hasParticipation) {
+                        // Manual checkbox — only Иномир
+                        const partVal = participated[act.key] ? 'checked' : '';
+                        cellContent += `<br><label style="font-size:0.76rem;cursor:pointer;margin-top:4px;display:inline-flex;align-items:center;gap:3px">
+          <input type="checkbox" ${partVal} onchange="updateEntry(${week.id},${p.id},'participated','${act.key}',this.checked)"> Участ.</label>`;
+                    }
+
+                    if (act.key === 'gvg') {
+                        // Warn flag for GvG
+                        const warnChecked = gvgWarn ? 'checked' : '';
+                        cellContent += `<br><label style="font-size:0.76rem;cursor:pointer;margin-top:4px;display:inline-flex;align-items:center;gap:3px;color:#e09252">
+          <input type="checkbox" ${warnChecked} onchange="updateEntry(${week.id},${p.id},'gvgWarn',null,this.checked)"> ⚠ warn</label>`;
+                    }
+
+                    html += `<td style="white-space:nowrap">${cellContent}</td>`;
                 }
 
                 html += `<td><input type="number" class="score-input" value="${entry.managementBonus || 0}" min="0" max="${s.maxMgmt}" step="0.5" onchange="updateEntry(${week.id},${p.id},'mgmt',null,this.value)"></td>`;
@@ -1995,10 +2145,21 @@
             const week = STATE.weeks.find(w => w.id === weekId);
             if (!week) return;
             let entry = week.entries.find(e => e.playerId === playerId);
-            if (!entry) { entry = { playerId, scores: {}, participated: {}, managementBonus: 0 }; week.entries.push(entry); }
-            if (type === 'score') entry.scores[actKey] = parseFloat(value) || 0;
-            else if (type === 'participated') entry.participated[actKey] = !!value;
-            else if (type === 'mgmt') entry.managementBonus = parseFloat(value) || 0;
+            if (!entry) { entry = { playerId, scores: {}, participated: {}, managementBonus: 0, gvgWarn: false }; week.entries.push(entry); }
+            if (type === 'score') {
+                entry.scores[actKey] = parseFloat(value) || 0;
+                // Auto-participation: for activities tracked by score presence, sync the flag
+                const actDef = ACTIVITIES.find(a => a.key === actKey);
+                if (actDef?.participationByScore) {
+                    entry.participated[actKey] = entry.scores[actKey] > 0;
+                }
+            } else if (type === 'participated') {
+                entry.participated[actKey] = !!value;
+            } else if (type === 'mgmt') {
+                entry.managementBonus = parseFloat(value) || 0;
+            } else if (type === 'gvgWarn') {
+                entry.gvgWarn = !!value;
+            }
         }
 
         function saveWeekData(weekId) {
@@ -2101,7 +2262,12 @@
                     activityTotal += weighted;
                 }
 
-                const participatedCount = ['gvg', 'kvm', 'arcade', 'otherworld'].filter(k => entry.participated[k]).length;
+                // Participation: score-based activities count if score > 0; manual checkbox for Иномир
+                const participatedCount = ACTIVITIES.filter(a => {
+                    if (a.participationByScore) return (entry.scores[a.key] || 0) > 0;
+                    if (a.hasParticipation) return !!entry.participated[a.key];
+                    return false;
+                }).length;
                 const participationBonus = (participatedCount / 4) * s.participationFactor * roleMult;
                 const mgmtBonus = Math.min(entry.managementBonus || 0, s.maxMgmt);
 
@@ -2118,14 +2284,41 @@
                 }
                 const deficitRaw = Math.max(0, cumDeserved - cumReceived);
                 const deficitBonus = deficitRaw * s.deficitWeight;
-                const finalScore = Math.max(0, baseScore + deficitBonus);
+                let finalScore = Math.max(0, baseScore + deficitBonus);
+
+                // --- Step 2.5: apply penalty multipliers ---
+                let penaltyMult = 1.0;
+                const penaltyReasons = [];
+                const thresholds = s.thresholds || {};
+                for (const act of ACTIVITIES) {
+                    const t = thresholds[act.key];
+                    if (t?.enabled && t.minScore > 0) {
+                        const raw = entry.scores[act.key] || 0;
+                        if (raw < t.minScore) {
+                            penaltyMult *= t.penaltyMult;
+                            penaltyReasons.push({
+                                type: 'threshold', act: act.key, label: act.label,
+                                raw, minScore: t.minScore, mult: t.penaltyMult
+                            });
+                        }
+                    }
+                }
+                if (entry.gvgWarn && s.gvgWarnPenalty?.enabled) {
+                    penaltyMult *= s.gvgWarnPenalty.penaltyMult;
+                    penaltyReasons.push({
+                        type: 'gvgWarn', mult: s.gvgWarnPenalty.penaltyMult
+                    });
+                }
+                if (penaltyMult < 1.0) finalScore = Math.max(0, finalScore * penaltyMult);
 
                 return {
                     playerId: p.id, playerName: p.name, role: p.role, playerClass: p.class || '',
                     roleMult, breakdown, activityTotal,
                     participationBonus, participatedCount, mgmtBonus,
                     loyaltyMult, loyaltyBonus, baseScore,
-                    deficitBonus, deficitRaw, cumDeserved, cumReceived, finalScore
+                    deficitBonus, deficitRaw, cumDeserved, cumReceived,
+                    penaltyMult, penaltyReasons,
+                    finalScore
                 };
             });
 
@@ -2270,7 +2463,9 @@
       <td class="score-breakdown">${r.mgmtBonus > 0 ? `+${r.mgmtBonus.toFixed(1)}` : '—'}</td>
       <td class="score-breakdown" data-tip-id="${loyTipId}">×${r.loyaltyMult.toFixed(2)}</td>
       <td class="score-breakdown" data-tip-id="${defTipId}">${defTxt}</td>
-      <td style="color:var(--gold-light);font-weight:600" data-tip-id="${finalTipId}">${r.finalScore.toFixed(3)}</td>
+      <td style="color:var(--gold-light);font-weight:600" data-tip-id="${finalTipId}">
+        ${r.finalScore.toFixed(3)}${r.penaltyMult < 1.0 ? ` <span style="color:#e05252;font-size:0.75rem" title="Штраф ×${r.penaltyMult.toFixed(2)}">⚠</span>` : ''}
+      </td>
       <td style="color:var(--text-dim)" data-tip-id="${pctTipId}">${pct}%</td>
       ${boxTypeCells}
       <td class="box-count" style="background:rgba(201,162,39,0.08)">${r.totalBoxes}</td>
@@ -2597,6 +2792,18 @@
             const roleName = getRole(r.role).name;
             const weeks = playerWeeks(STATE.players.find(p => p.id === r.playerId) || {});
             const loyPct = Math.round((r.loyaltyMult - 1) * 100);
+            const penaltyBlock = r.penaltyMult < 1.0 && r.penaltyReasons?.length
+                ? `\n// ⚠ Штрафы\n` + r.penaltyReasons.map(pr => {
+                    if (pr.type === 'threshold')
+                        return `  ${pr.label.padEnd(11)} ${pr.raw} < ${pr.minScore} → ×${pr.mult.toFixed(2)}`;
+                    if (pr.type === 'gvgWarn')
+                        return `  GvG Warn         → ×${pr.mult.toFixed(2)}`;
+                    return '';
+                }).join('\n')
+                + `\n  penaltyMult     ×${r.penaltyMult.toFixed(3)}`
+                + `\n  после штрафа    ${r.finalScore.toFixed(3)}`
+                : '';
+
             const defLine = r.deficitBonus > 0.001
                 ? `\n  дефицит × ${s.deficitWeight.toFixed(2)}  +${r.deficitBonus.toFixed(3)}`
                 : '';
@@ -2622,7 +2829,7 @@ ${actLines || '  (нет очков)'}
 //    (${weeks} нед × ${(s.loyaltyIncrement * 100).toFixed(1)}% = +${loyPct}%)
   × ${r.loyaltyMult.toFixed(3)} ──────────────
   базовый счёт    ${r.baseScore.toFixed(3)}
-${defLine}
+${defLine}${penaltyBlock}
 // 5. Итого → доля пула
   ══════════════════════════
   finalScore      ${r.finalScore.toFixed(3)}
