@@ -1475,6 +1475,10 @@
                     </div>
                 </div>
 
+                <div class="alert alert-info" style="margin-bottom:16px;font-size:0.82rem;line-height:1.8"
+                    id="formula-notice">
+                </div>
+
                 <button class="btn btn-gold" onclick="calculateDistribution()" style="margin-bottom:20px">⚔ Рассчитать
                     распределение</button>
                 <button class="btn btn-outline" onclick="openSimulator()"
@@ -2621,6 +2625,35 @@
             const week = STATE.weeks.find(w => w.id === STATE.currentWeekId) || STATE.weeks[STATE.weeks.length - 1];
             document.getElementById('dist-week-label').textContent = week ? week.label : '';
 
+            // Render live formula notice with current settings values
+            const sn = STATE.settings;
+            const formulaEl = document.getElementById('formula-notice');
+            if (formulaEl) {
+                formulaEl.innerHTML = `
+      <div style="font-family:'Cinzel',serif;font-size:0.78rem;color:var(--gold);margin-bottom:8px;letter-spacing:0.05em">⚙ ФОРМУЛА РАСЧЁТА</div>
+      <pre style="font-family:monospace;font-size:0.75rem;color:var(--text);white-space:pre-wrap;margin:0;line-height:1.85">// 1. Взвешенные очки активности
+actScore[A]   = (raw[A] ÷ globalMax[A]) × roleMult × weight[A]
+actTotal      = Σ actScore[A]
+
+// 2. Итоговый счёт
+participBonus = (участий÷4) × ${sn.participationFactor.toFixed(2)} × roleMult
+loyaltyMult   = 1 + min(weeks × ${(sn.loyaltyIncrement * 100).toFixed(1)}%, ${Math.round(sn.maxLoyaltyBonus * 100)}%)
+baseScore     = (actTotal + participBonus + mgmtBonus) × loyaltyMult
+deficitBonus  = max(0, Σdesерved − Σreceived) × ${sn.deficitWeight.toFixed(2)}
+finalScore    = (baseScore + deficitBonus) × penaltyMult
+
+// 3. Глобальная доля
+proportion    = finalScore ÷ Σ(все finalScore)
+exactBoxes    = proportion × totalBoxes  →  округление по дробной части
+
+// 4. По типам коробок  [blend = ${(sn.blendRatio * 100).toFixed(0)}%]
+//    тип привязан к активности A:
+blended[X]    = ${(sn.blendRatio).toFixed(2)} × normAct[A] + ${(1 - sn.blendRatio).toFixed(2)} × normGlobal
+//    ⚠ blend &gt; 0 → игрок с высоким score в A получит БОЛЬШЕ коробок типа X
+//       чем его глобальная доля — это ожидаемое поведение
+boxes[X]      = (blended[X] ÷ Σ blended[X]) × pool[X]  →  округление остатков</pre>`;
+            }
+
             // Build the dynamic box-type input grid
             renderBoxInputs(week);
             document.getElementById('distribution-results').style.display = 'none';
@@ -2848,8 +2881,10 @@
                 const playerObj = STATE.players.find(p => p.id === r.playerId);
                 window._tipData[loyTipId] = buildTipLoyalty(playerWeeks(playerObj || {}), s.loyaltyIncrement, r.loyaltyMult - 1, r.loyaltyMult);
                 const defTipId = `cell-${r.playerId}-def`;
-                window._tipData[defTipId] = buildTipDeficit(r.cumDeserved || 0, r.cumReceived || 0, r.deficitRaw, s.deficitWeight, r.deficitBonus);
-                const defTxt = r.deficitBonus > 0.001 ? `+${r.deficitBonus.toFixed(2)} <span style="font-size:0.72rem;color:var(--text-dim)">(Δ${r.deficitRaw.toFixed(2)})</span>` : '—';
+                window._tipData[defTipId] = buildTipDeficit(r.cumDeserved || 0, r.cumReceived || 0, r.deficitRaw, s.deficitWeight, r.deficitBonus, r.proportion, totalBoxes);
+                const defTxt = r.deficitBonus > 0.0001
+                    ? `+${r.deficitBonus.toFixed(4)} <span style="font-size:0.72rem;color:var(--text-dim)">(Δ${r.deficitRaw.toFixed(4)})</span>`
+                    : '—';
                 const finalTipId = `cell-${r.playerId}-final`;
                 window._tipData[finalTipId] = buildTipFinalScore(r, s, totalBoxes);
 
@@ -3189,16 +3224,28 @@
     <div class="tip-formula">Формула: 1 + min(недели × прирост, макс)</div>`;
         }
 
-        function buildTipDeficit(cumDeserved, cumReceived, raw, weight, bonus) {
-            const sign = bonus > 0.001 ? '+' : '';
+        function buildTipDeficit(cumDeserved, cumReceived, raw, weight, bonus, proportion, totalBoxes) {
+            const bonusBoxes = bonus > 0 && totalBoxes > 0
+                ? ((proportion - (proportion * (1 - bonus / (/* approx */ (bonus / weight / Math.max(raw, 0.0001) * weight + bonus))))) * totalBoxes)
+                : 0;
+            // Simpler: boxes delta = (deficitBonus / totalFinalScore) * totalBoxes
+            // We don't have totalFinalScore here, so just show proportion delta
+            const hasDeficit = raw > 0.00001;
             return `
     <div class="tip-title">Поправка дефицита</div>
-    <div class="tip-row"><span class="tip-label">Заслужено (∑ прошлых)</span><span class="tip-val">${cumDeserved.toFixed(3)}</span></div>
-    <div class="tip-row"><span class="tip-label">Получено (∑ прошлых)</span><span class="tip-val">${cumReceived.toFixed(3)}</span></div>
-    <div class="tip-row"><span class="tip-label">Дефицит Δ</span><span class="tip-val">${raw.toFixed(3)}</span></div>
-    <div class="tip-row"><span class="tip-label">Вес дефицита</span><span class="tip-val">×${weight.toFixed(2)}</span></div>
-    <div class="tip-row"><span class="tip-label">Поправка</span><span class="tip-val gold">${sign}${bonus.toFixed(3)}</span></div>
-    <div class="tip-formula">Накапливается между неделями: если игрок стабильно получает меньше заслуженного — система добавляет бонус.</div>`;
+    <pre style="font-family:monospace;font-size:0.76rem;color:var(--text);line-height:1.7;margin:0;white-space:pre-wrap">// Накопленные доли за прошлые недели
+заслужено  ${cumDeserved.toFixed(6)}
+получено   ${cumReceived.toFixed(6)}
+──────────────────────────
+Δ дефицит  ${raw.toFixed(6)}
+
+// Бонус к finalScore
+Δ × вес(${weight.toFixed(2)}) = +${bonus.toFixed(6)}
+${hasDeficit
+                    ? `\n// Влияние на коробки\nМалый дефицит → незначительный\nбонус к finalScore. Разница в\nкоробках обычно < 1 штуки.`
+                    : `\n// Дефицита нет\nИгрок получал ровно столько,\nсколько заслуживал.`}
+</pre>
+    <div class="tip-formula">Δ = Σ(заслужено) − Σ(получено) по всем прошлым неделям</div>`;
         }
 
         function buildTipFinalScore(r, s, totalBoxes) {
@@ -3227,8 +3274,8 @@
                 + `\n  после штрафа    ${r.finalScore.toFixed(3)}`
                 : '';
 
-            const defLine = r.deficitBonus > 0.001
-                ? `\n  дефицит × ${s.deficitWeight.toFixed(2)}  +${r.deficitBonus.toFixed(3)}`
+            const defLine = r.deficitBonus > 0.0001
+                ? `\n  дефицит × ${s.deficitWeight.toFixed(2)}  +${r.deficitBonus.toFixed(6)}`
                 : '';
 
             const html = `
