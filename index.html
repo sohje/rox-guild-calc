@@ -985,6 +985,48 @@
         }
 
         /* ℹ icon in column headers */
+        .sim-control-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .sim-control-row label {
+            font-size: 0.78rem;
+            color: var(--text-dim);
+            min-width: 80px;
+            flex-shrink: 0;
+        }
+
+        .sim-control-row input[type=range] {
+            flex: 1;
+        }
+
+        .sim-val {
+            font-family: 'Cinzel', serif;
+            font-size: 0.75rem;
+            color: var(--gold);
+            min-width: 36px;
+            text-align: right;
+        }
+
+        .sim-delta-pos {
+            color: #52c87a;
+            font-weight: 600;
+        }
+
+        .sim-delta-neg {
+            color: #e05252;
+            font-weight: 600;
+        }
+
+        .sim-delta-neu {
+            color: var(--text-dim);
+        }
+
+        /* ℹ icon in column headers */
         .col-info {
             display: inline-flex;
             align-items: center;
@@ -1010,6 +1052,125 @@
 
         [data-tip-id] {
             cursor: help;
+        }
+
+        /* CSV IMPORT MODAL */
+        .csv-tabs {
+            display: flex;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 16px;
+        }
+
+        .csv-tab-btn {
+            padding: 8px 18px;
+            background: none;
+            border: none;
+            border-bottom: 2px solid transparent;
+            color: var(--text-dim);
+            font-family: 'Cinzel', serif;
+            font-size: 0.75rem;
+            letter-spacing: 0.05em;
+            cursor: pointer;
+            transition: color 0.15s, border-color 0.15s;
+            margin-bottom: -1px;
+        }
+
+        .csv-tab-btn.active {
+            color: var(--gold);
+            border-bottom-color: var(--gold);
+        }
+
+        .csv-tab-btn:hover:not(.active) {
+            color: var(--text-bright);
+        }
+
+        .csv-panel {
+            display: none;
+        }
+
+        .csv-panel.active {
+            display: block;
+        }
+
+        .csv-preview-table {
+            font-size: 0.8rem;
+        }
+
+        .csv-preview-table td,
+        .csv-preview-table th {
+            padding: 5px 8px;
+        }
+
+        .csv-row-new {
+            background: rgba(82, 200, 122, 0.08);
+        }
+
+        .csv-row-exists {
+            background: rgba(201, 162, 39, 0.05);
+        }
+
+        .csv-badge-new {
+            color: #52c87a;
+            font-size: 0.7rem;
+            font-weight: 700;
+        }
+
+        .csv-badge-exists {
+            color: var(--gold-dim);
+            font-size: 0.7rem;
+        }
+
+        .csv-schema-table {
+            font-size: 0.8rem;
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        .csv-schema-table th {
+            background: var(--bg3);
+            color: var(--gold-dim);
+            font-family: 'Cinzel', serif;
+            font-size: 0.7rem;
+            letter-spacing: 0.05em;
+            padding: 6px 10px;
+            text-align: left;
+        }
+
+        .csv-schema-table td {
+            padding: 6px 10px;
+            border-bottom: 1px solid var(--border);
+            vertical-align: top;
+        }
+
+        .csv-schema-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .csv-schema-req {
+            color: var(--gold);
+            font-size: 0.72rem;
+            font-weight: 600;
+        }
+
+        .csv-schema-opt {
+            color: var(--text-dim);
+            font-size: 0.72rem;
+        }
+
+        .csv-drop-zone {
+            border: 2px dashed var(--border);
+            padding: 32px;
+            text-align: center;
+            color: var(--text-dim);
+            cursor: pointer;
+            transition: border-color 0.2s, color 0.2s;
+            margin-bottom: 16px;
+        }
+
+        .csv-drop-zone:hover,
+        .csv-drop-zone.drag-over {
+            border-color: var(--gold-dim);
+            color: var(--text-bright);
         }
     </style>
 </head>
@@ -1039,6 +1200,8 @@
             <button class="btn btn-outline btn-sm" onclick="document.getElementById('import-file').click()"
                 title="Загрузить данные из файла">⬆ Импорт</button>
             <input type="file" id="import-file" accept=".json" style="display:none" onchange="importState(event)">
+            <button class="btn btn-outline btn-sm" onclick="openCsvImport()"
+                style="border-color:#52c87a44;color:#52c87a" title="Импорт из CSV таблицы активности">📋 CSV</button>
         </div>
     </header>
 
@@ -1159,7 +1322,8 @@
                     <div class="section-title">Система дефицита</div>
                     <div class="tip">Отслеживает, насколько каждый игрок недополучил коробок по сравнению с его
                         «заслуженной долей» за все прошлые недели. Помогает компенсировать накопленную несправедливость.
-                        <b>Вес 0</b> = система отключена. <b>Вес 1</b> = полная компенсация.</div>
+                        <b>Вес 0</b> = система отключена. <b>Вес 1</b> = полная компенсация.
+                    </div>
                     <div class="field-row">
                         <label>Вес дефицита</label>
                         <input type="range" id="cfg-deficitWeight" min="0" max="1" step="0.05" value="0.4"
@@ -1187,8 +1351,8 @@
                     <button class="btn btn-outline btn-sm" onclick="addBoxType()">+ Добавить тип</button>
                     <hr style="border-color:var(--border);margin:12px 0">
                     <div class="tip"><b>Смешивание (blend):</b> Насколько сильно коробка привязана к своей активности.
-                        При 100% — чисто по очкам своей активности. При 0% — как раньше, по общему счёту. Значение 70%
-                        рекомендуется: активность имеет приоритет, но общий вклад смягчает крайности для саппортов.
+                        При 100% — чисто по очкам своей активности. При 0% — как раньше, по общему счёту. Значение 70%:
+                        активность имеет приоритет, но общий вклад смягчает крайности для саппортов.
                     </div>
                     <div class="field-row">
                         <label>Привязка к активности</label>
@@ -1241,7 +1405,11 @@
             <div
                 style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px">
                 <div class="section-title" style="margin-bottom:0">Список участников гильдии</div>
-                <button class="btn btn-gold" onclick="openPlayerModal()">+ Добавить участника</button>
+                <div style="display:flex;gap:8px;flex-wrap:wrap">
+                    <button class="btn btn-outline btn-sm" onclick="openCsvImport('players')"
+                        style="border-color:#52c87a44;color:#52c87a">📋 Импорт из CSV</button>
+                    <button class="btn btn-gold" onclick="openPlayerModal()">+ Добавить участника</button>
+                </div>
             </div>
             <div class="alert alert-info">
                 <b>Совет:</b> Роль влияет на ролевой мультипликатор при расчёте. «Недели в гильдии» влияют на бонус
@@ -1272,6 +1440,8 @@
                 <div class="section-title" style="margin-bottom:0">Данные недели:</div>
                 <select id="weekSelect" onchange="loadWeekData()"></select>
                 <button class="btn btn-gold" onclick="createNewWeek()">+ Новая неделя</button>
+                <button class="btn btn-outline btn-sm" onclick="openCsvImport('week')"
+                    style="border-color:#52c87a44;color:#52c87a">📋 CSV</button>
                 <button class="btn btn-outline btn-sm" onclick="deleteCurrentWeek()">🗑 Удалить</button>
             </div>
 
@@ -1307,6 +1477,9 @@
 
                 <button class="btn btn-gold" onclick="calculateDistribution()" style="margin-bottom:20px">⚔ Рассчитать
                     распределение</button>
+                <button class="btn btn-outline" onclick="openSimulator()"
+                    style="margin-bottom:20px;border-color:var(--gold-dim);color:var(--gold)">⚗ Симулятор «что
+                    если»</button>
 
                 <div id="distribution-results" style="display:none">
                     <div class="result-header">
@@ -1416,6 +1589,276 @@
 
     </div><!-- /main -->
 
+    <!-- CSV IMPORT MODAL -->
+    <div class="modal-overlay" id="csvImportModal">
+        <div class="modal"
+            style="max-width:860px;width:96%;max-height:90vh;display:flex;flex-direction:column;overflow:hidden">
+            <div class="modal-title" style="flex-shrink:0">📋 Импорт из CSV</div>
+
+            <!-- Tabs -->
+            <div class="csv-tabs" style="flex-shrink:0">
+                <button class="csv-tab-btn active" id="csvtab-btn-upload" onclick="switchCsvTab('upload')">⬆
+                    Загрузка</button>
+                <button class="csv-tab-btn" id="csvtab-btn-players" onclick="switchCsvTab('players')">👥
+                    Участники</button>
+                <button class="csv-tab-btn" id="csvtab-btn-week" onclick="switchCsvTab('week')">📊 Данные
+                    недели</button>
+                <button class="csv-tab-btn" id="csvtab-btn-schema" onclick="switchCsvTab('schema')">📄 Формат
+                    CSV</button>
+            </div>
+
+            <!-- Scrollable body -->
+            <div style="flex:1;overflow-y:auto;min-height:0">
+
+                <!-- UPLOAD TAB -->
+                <div class="csv-panel active" id="csvtab-upload">
+                    <div class="csv-drop-zone" id="csv-drop-zone"
+                        onclick="document.getElementById('csv-file-input').click()"
+                        ondragover="event.preventDefault();this.classList.add('drag-over')"
+                        ondragleave="this.classList.remove('drag-over')" ondrop="onCsvDrop(event)">
+                        <div style="font-size:1.8rem;margin-bottom:8px">📂</div>
+                        <div
+                            style="font-family:'Cinzel',serif;font-size:0.85rem;color:var(--text-bright);margin-bottom:4px">
+                            Перетащите CSV файл сюда или нажмите для выбора
+                        </div>
+                        <div style="font-size:0.78rem">Поддерживается формат таблицы активности гильдии</div>
+                    </div>
+                    <input type="file" id="csv-file-input" accept=".csv" style="display:none"
+                        onchange="onCsvFileSelect(event)">
+                    <div id="csv-upload-status" style="font-size:0.85rem;color:var(--text-dim);margin-top:8px"></div>
+                </div>
+
+                <!-- PLAYERS TAB -->
+                <div class="csv-panel" id="csvtab-players">
+                    <div id="csv-players-empty" class="empty-state">
+                        Сначала загрузите CSV файл во вкладке «Загрузка».
+                    </div>
+                    <div id="csv-players-content" style="display:none">
+                        <div style="display:flex;align-items:center;gap:16px;margin-bottom:12px;flex-wrap:wrap">
+                            <div id="csv-players-summary" style="font-size:0.85rem;color:var(--text-dim)"></div>
+                            <label style="display:flex;align-items:center;gap:6px;font-size:0.82rem;cursor:pointer">
+                                <input type="checkbox" id="csv-skip-existing" checked
+                                    onchange="renderCsvPlayersPreview()">
+                                Пропускать существующих
+                            </label>
+                        </div>
+                        <div class="tbl-wrap">
+                            <table class="csv-preview-table">
+                                <thead>
+                                    <tr>
+                                        <th></th>
+                                        <th>Ник</th>
+                                        <th>Класс / Роль</th>
+                                        <th>Дата вступления</th>
+                                        <th>Статус</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="csv-players-tbody"></tbody>
+                            </table>
+                        </div>
+                        <div style="margin-top:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+                            <button class="btn btn-gold" onclick="applyCsvPlayers()">
+                                ✓ Импортировать участников
+                            </button>
+                            <div id="csv-players-result" style="font-size:0.82rem;color:var(--gold)"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- WEEK TAB -->
+                <div class="csv-panel" id="csvtab-week">
+                    <div id="csv-week-empty" class="empty-state">
+                        Сначала загрузите CSV файл во вкладке «Загрузка».
+                    </div>
+                    <div id="csv-week-content" style="display:none">
+                        <div style="display:flex;align-items:center;gap:16px;margin-bottom:12px;flex-wrap:wrap">
+                            <div id="csv-week-summary" style="font-size:0.85rem;color:var(--text-dim)"></div>
+                            <label
+                                style="font-size:0.82rem;color:var(--text-dim);display:flex;align-items:center;gap:6px">
+                                Бонус офицера:
+                                <input type="number" id="csv-officer-bonus" value="2" min="0" max="5" step="0.5"
+                                    style="width:56px;padding:3px 6px">
+                            </label>
+                        </div>
+                        <div class="alert alert-warn" id="csv-week-no-week" style="display:none">
+                            Нет активной недели. Создайте неделю во вкладке «Неделя» перед импортом данных.
+                        </div>
+                        <div class="tbl-wrap">
+                            <table class="csv-preview-table">
+                                <thead>
+                                    <tr>
+                                        <th>Ник</th>
+                                        <th>KvM</th>
+                                        <th>GvG</th>
+                                        <th>Аркада</th>
+                                        <th>Приказы</th>
+                                        <th>Офицер</th>
+                                        <th>Статус</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="csv-week-tbody"></tbody>
+                            </table>
+                        </div>
+                        <div style="margin-top:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+                            <button class="btn btn-gold" onclick="applyCsvWeek()">
+                                ✓ Заполнить данные недели
+                            </button>
+                            <div id="csv-week-result" style="font-size:0.82rem;color:var(--gold)"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SCHEMA TAB -->
+                <div class="csv-panel" id="csvtab-schema">
+                    <div style="margin-bottom:16px">
+                        <div class="section-title" style="font-size:0.85rem;margin-bottom:8px">Ожидаемая структура CSV
+                            файла</div>
+                        <div class="tip">
+                            Первая строка должна содержать заголовки колонок (регистр не важен).
+                            Порядок колонок не важен — система ищет их по названию.
+                            Пустые строки и строки без никнейма игнорируются.
+                        </div>
+                    </div>
+
+                    <table class="csv-schema-table">
+                        <thead>
+                            <tr>
+                                <th>Колонка в CSV</th>
+                                <th>Куда импортируется</th>
+                                <th>Обязательна</th>
+                                <th>Примечание</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>Никнейм</code></td>
+                                <td>Имя игрока</td>
+                                <td><span class="csv-schema-req">✓ Да</span></td>
+                                <td>Используется для поиска существующего игрока. Регистр не важен.</td>
+                            </tr>
+                            <tr>
+                                <td><code>Класс</code></td>
+                                <td>Поле «Класс» + создание роли</td>
+                                <td><span class="csv-schema-opt">— Нет</span></td>
+                                <td>Автоматически создаёт роль с таким же именем (мультипликатор ×1.0). Дубли не
+                                    создаются.</td>
+                            </tr>
+                            <tr>
+                                <td><code>Дата вступления</code></td>
+                                <td>Дата вступления в гильдию</td>
+                                <td><span class="csv-schema-opt">— Нет</span></td>
+                                <td>Форматы: <code>дд.мм.гг</code> или <code>дд.мм.гггг</code>. Например:
+                                    <code>14.01.26</code> или <code>14.01.2026</code>.
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><code>KVM за неделю</code></td>
+                                <td>Очки KvM текущей недели</td>
+                                <td><span class="csv-schema-opt">— Нет</span></td>
+                                <td>Только для вкладки «Данные недели».</td>
+                            </tr>
+                            <tr>
+                                <td><code>GvG</code></td>
+                                <td>Очки GvG текущей недели</td>
+                                <td><span class="csv-schema-opt">— Нет</span></td>
+                                <td>Только для вкладки «Данные недели».</td>
+                            </tr>
+                            <tr>
+                                <td><code>Баллы Аркады</code></td>
+                                <td>Очки Аркады текущей недели</td>
+                                <td><span class="csv-schema-opt">— Нет</span></td>
+                                <td>Только для вкладки «Данные недели».</td>
+                            </tr>
+                            <tr>
+                                <td><code>Контракты (7 дней)</code></td>
+                                <td>Очки Приказов текущей недели</td>
+                                <td><span class="csv-schema-opt">— Нет</span></td>
+                                <td>Только для вкладки «Данные недели».</td>
+                            </tr>
+                            <tr>
+                                <td><code>Офицер</code></td>
+                                <td>Управленческий бонус</td>
+                                <td><span class="csv-schema-opt">— Нет</span></td>
+                                <td>Значение «Да» присваивает настраиваемый бонус офицера. «Нет» = 0.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                </div>
+
+            </div><!-- /scrollable body -->
+
+            <div class="modal-actions" style="flex-shrink:0;margin-top:16px">
+                <button class="btn btn-outline" onclick="closeCsvImport()">Закрыть</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SIMULATOR MODAL -->
+    <div class="modal-overlay" id="simulatorModal">
+        <div class="modal"
+            style="max-width:calc(100vw - 32px);width:100%;height:calc(100vh - 32px);max-height:calc(100vh - 32px);display:flex;flex-direction:column;margin:16px;overflow-y:hidden">
+            <div class="modal-title" style="flex-shrink:0">⚗ Симулятор «что если»</div>
+            <div style="font-size:0.82rem;color:var(--text-dim);margin-bottom:16px;flex-shrink:0">
+                Измените параметры и наблюдайте как меняется распределение — без сохранения в настройки.
+                Красный/зелёный цвет показывает отклонение от текущего реального расчёта.
+            </div>
+
+            <!-- Main layout — fills remaining height -->
+            <div style="display:grid;grid-template-columns:300px 1fr;gap:20px;flex:1;min-height:0;overflow:hidden"
+                id="sim-layout">
+
+                <!-- LEFT: scrollable controls -->
+                <div style="overflow-y:auto;padding-right:8px">
+                    <div
+                        style="font-family:'Cinzel',serif;font-size:0.75rem;color:var(--gold-dim);margin-bottom:10px;letter-spacing:0.06em">
+                        ПАРАМЕТРЫ</div>
+
+                    <div style="background:var(--bg3);border:1px solid var(--border);padding:12px;margin-bottom:10px">
+                        <div style="font-size:0.78rem;color:var(--text-dim);margin-bottom:8px">Количество коробок</div>
+                        <div id="sim-box-inputs"></div>
+                    </div>
+
+                    <div style="background:var(--bg3);border:1px solid var(--border);padding:12px;margin-bottom:10px">
+                        <div style="font-size:0.78rem;color:var(--text-dim);margin-bottom:8px">Веса активностей</div>
+                        <div id="sim-weight-inputs"></div>
+                    </div>
+
+                    <div style="background:var(--bg3);border:1px solid var(--border);padding:12px;margin-bottom:10px">
+                        <div style="font-size:0.78rem;color:var(--text-dim);margin-bottom:8px">Ролевые множители</div>
+                        <div id="sim-role-inputs"></div>
+                    </div>
+
+                    <div style="background:var(--bg3);border:1px solid var(--border);padding:12px;margin-bottom:10px">
+                        <div style="font-size:0.78rem;color:var(--text-dim);margin-bottom:8px">Прочие параметры</div>
+                        <div id="sim-other-inputs"></div>
+                    </div>
+
+                    <button class="btn btn-outline btn-sm" onclick="resetSimulator()" style="width:100%">↩ Сбросить к
+                        текущим</button>
+                </div>
+
+                <!-- RIGHT: scrollable results -->
+                <div style="overflow-y:auto;display:flex;flex-direction:column;min-height:0">
+                    <div
+                        style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px;flex-shrink:0">
+                        <div
+                            style="font-family:'Cinzel',serif;font-size:0.75rem;color:var(--gold-dim);letter-spacing:0.06em">
+                            РЕЗУЛЬТАТ</div>
+                        <div id="sim-status" style="font-size:0.78rem;color:var(--text-dim)"></div>
+                    </div>
+                    <div id="sim-results" class="tbl-wrap" style="flex:1"></div>
+                </div>
+
+            </div>
+
+            <div class="modal-actions" style="margin-top:16px;flex-shrink:0">
+                <button class="btn btn-outline" onclick="closeSimulator()">Закрыть</button>
+                <button class="btn btn-gold" onclick="applySimulatorSettings()">✓ Применить настройки</button>
+            </div>
+        </div>
+    </div>
+
     <!-- SHARE LINK MODAL -->
     <div class="modal-overlay" id="shareModal">
         <div class="modal" style="max-width:560px">
@@ -1474,7 +1917,16 @@
             </div>
             <div style="margin-bottom:10px">
                 <label>Дата вступления в гильдию</label>
-                <input type="date" id="edit-joinDate" style="width:100%" oninput="updateJoinDateDisplay()">
+                <div style="display:flex;align-items:center;gap:4px;margin-top:4px">
+                    <input type="number" id="edit-joinDay" placeholder="ДД" min="1" max="31" step="1"
+                        style="width:54px;text-align:center" oninput="onJoinDatePart('day',this)">
+                    <span style="color:var(--text-dim)">.</span>
+                    <input type="number" id="edit-joinMonth" placeholder="ММ" min="1" max="12" step="1"
+                        style="width:54px;text-align:center" oninput="onJoinDatePart('month',this)">
+                    <span style="color:var(--text-dim)">.</span>
+                    <input type="number" id="edit-joinYear" placeholder="ГГГГ" min="2020" max="2099" step="1"
+                        style="width:72px;text-align:center" oninput="onJoinDatePart('year',this)">
+                </div>
                 <div id="edit-weeks-display" style="font-size:0.78rem;color:var(--gold);margin-top:4px"></div>
             </div>
             <div style="margin-bottom:10px">
@@ -1584,50 +2036,9 @@
                 const raw = localStorage.getItem('roxGuildState');
                 if (!raw) return;
                 const saved = JSON.parse(raw);
+                if (!saved || typeof saved !== 'object') return;
                 STATE = saved;
-
-                // ── MIGRATION: ensure boxTypes array exists ──
-                if (!STATE.boxTypes || !Array.isArray(STATE.boxTypes) || STATE.boxTypes.length === 0) {
-                    // Migrate from old flat boxCounts on weeks — reconstruct default types
-                    STATE.boxTypes = DEFAULT_BOX_TYPES.map(b => ({ ...b }));
-                }
-                // Ensure blendRatio setting exists
-                if (STATE.settings.blendRatio === undefined) STATE.settings.blendRatio = 0.7;
-
-                // ── MIGRATION: old saves had settings.roleMultipliers instead of STATE.roles ──
-                if (!STATE.roles || !Array.isArray(STATE.roles) || STATE.roles.length === 0) {
-                    const oldMult = STATE.settings?.roleMultipliers || {};
-                    STATE.roles = DEFAULT_ROLES.map(r => {
-                        // Try to find an old-style key that matches (DPS, Support, Tank)
-                        const legacyKey = Object.keys(oldMult).find(k => k.toLowerCase() === r.name.toLowerCase());
-                        return { ...r, multiplier: legacyKey ? oldMult[legacyKey] : r.multiplier };
-                    });
-                }
-                // Ensure each role has a color (older saves may lack it)
-                STATE.roles.forEach((r, i) => {
-                    if (!r.color) r.color = DEFAULT_ROLES[i % DEFAULT_ROLES.length].color;
-                });
-                // Clean up legacy key if present
-                if (STATE.settings?.roleMultipliers) delete STATE.settings.roleMultipliers;
-
-                // ── MIGRATION: players with old string role like "DPS" → match to role id ──
-                STATE.players.forEach(p => {
-                    if (p.role && !p.role.startsWith('role_')) {
-                        const match = STATE.roles.find(r => r.name === p.role || r.id === p.role);
-                        p.role = match ? match.id : (STATE.roles[0]?.id || 'role_dps');
-                    }
-                });
-
-                // ── MIGRATION: players with numeric p.weeks → approximate joinDate ──
-                STATE.players.forEach(p => {
-                    if (!p.joinDate && p.weeks !== undefined) {
-                        // Backfill: approximate join date = now minus weeks * 7 days
-                        const approxJoin = new Date(Date.now() - (p.weeks || 0) * 7 * 24 * 3600 * 1000);
-                        p.joinDate = approxJoin.toISOString();
-                    }
-                });
-
-                // ── MIGRATION: penalty thresholds and gvgWarnPenalty ──
+                // Ensure new fields added after initial release exist (not migrations — just defaults)
                 if (!STATE.settings.thresholds) {
                     STATE.settings.thresholds = {
                         gvg: { enabled: false, minScore: 600, penaltyMult: 0.0 },
@@ -1935,7 +2346,7 @@
             document.getElementById('edit-player-id').value = id || '';
 
             // Default join date = today
-            const todayISO = new Date().toISOString().slice(0, 10);
+            const todayISO = new Date().toISOString();
 
             if (id) {
                 const p = STATE.players.find(x => x.id === id);
@@ -1943,26 +2354,55 @@
                 document.getElementById('edit-name').value = p.name;
                 sel.value = p.role;
                 document.getElementById('edit-class').value = p.class || '';
-                document.getElementById('edit-joinDate').value = p.joinDate ? p.joinDate.slice(0, 10) : todayISO;
+                setJoinDateFields(p.joinDate || todayISO);
                 document.getElementById('edit-active').value = String(p.active);
             } else {
                 document.getElementById('playerModalTitle').textContent = 'Добавить участника';
                 document.getElementById('edit-name').value = '';
                 sel.value = STATE.roles[0]?.id || '';
                 document.getElementById('edit-class').value = '';
-                document.getElementById('edit-joinDate').value = todayISO;
+                setJoinDateFields(todayISO);
                 document.getElementById('edit-active').value = 'true';
             }
             updateJoinDateDisplay();
             document.getElementById('playerModal').classList.add('open');
         }
 
-        // Live-updates the "X недель" hint under the date picker
+        // Auto-advance focus between day→month→year fields
+        function onJoinDatePart(part, el) {
+            const v = parseInt(el.value);
+            if (part === 'day' && el.value.length >= 2) document.getElementById('edit-joinMonth').focus();
+            if (part === 'month' && el.value.length >= 2) document.getElementById('edit-joinYear').focus();
+            updateJoinDateDisplay();
+        }
+
+        // Reads the three fields and returns an ISO date string, or null if incomplete
+        function readJoinDateFields() {
+            const d = parseInt(document.getElementById('edit-joinDay').value);
+            const m = parseInt(document.getElementById('edit-joinMonth').value);
+            const y = parseInt(document.getElementById('edit-joinYear').value);
+            if (!d || !m || !y || y < 2000 || y > 2099 || m < 1 || m > 12 || d < 1 || d > 31) return null;
+            const date = new Date(y, m - 1, d);
+            if (isNaN(date.getTime())) return null;
+            return date.toISOString();
+        }
+
+        // Sets the three fields from an ISO date string
+        function setJoinDateFields(iso) {
+            if (!iso) { ['edit-joinDay', 'edit-joinMonth', 'edit-joinYear'].forEach(id => document.getElementById(id).value = ''); return; }
+            const d = new Date(iso);
+            document.getElementById('edit-joinDay').value = d.getDate();
+            document.getElementById('edit-joinMonth').value = d.getMonth() + 1;
+            document.getElementById('edit-joinYear').value = d.getFullYear();
+        }
+
+        // Live-updates the "X недель" hint under the date fields
         function updateJoinDateDisplay() {
-            const dateVal = document.getElementById('edit-joinDate').value;
+            const iso = readJoinDateFields();
             const display = document.getElementById('edit-weeks-display');
-            if (!dateVal || !display) return;
-            const ms = Date.now() - new Date(dateVal).getTime();
+            if (!display) return;
+            if (!iso) { display.textContent = ''; return; }
+            const ms = Date.now() - new Date(iso).getTime();
             const weeks = Math.max(0, Math.floor(ms / (7 * 24 * 3600 * 1000)));
             const s = STATE.settings;
             const loyaltyBonus = Math.min(weeks * s.loyaltyIncrement, s.maxLoyaltyBonus);
@@ -1975,14 +2415,14 @@
         function savePlayer() {
             const name = document.getElementById('edit-name').value.trim();
             if (!name) { alert('Введите имя игрока'); return; }
-            const joinDateVal = document.getElementById('edit-joinDate').value;
-            if (!joinDateVal) { alert('Укажите дату вступления'); return; }
+            const joinDateISO = readJoinDateFields();
+            if (!joinDateISO) { alert('Укажите корректную дату вступления (дд.мм.гггг)'); return; }
             const id = document.getElementById('edit-player-id').value;
             const data = {
                 name,
                 role: document.getElementById('edit-role').value,
                 class: document.getElementById('edit-class').value.trim(),
-                joinDate: new Date(joinDateVal).toISOString(),
+                joinDate: joinDateISO,
                 active: document.getElementById('edit-active').value === 'true'
             };
             if (id) {
@@ -2217,27 +2657,17 @@
         // ============================
         // ALGORITHM
         // ============================
-        function calculateDistribution() {
-            const week = STATE.weeks.find(w => w.id === STATE.currentWeekId) || STATE.weeks[STATE.weeks.length - 1];
-            if (!week) { alert('Нет данных недели'); return; }
 
-            const s = STATE.settings;
+        // Pure function — takes all inputs explicitly, returns allocs array.
+        // No DOM reads, no STATE writes, no save(). Safe to call from simulator.
+        function runDistributionAlgorithm(week, settings, boxCounts, players, boxTypes) {
+            const s = settings;
+            const activePlayers = players.filter(p => p.active);
+            if (!activePlayers.length) return [];
 
-            // Read box counts per type from the dynamic inputs
-            const boxCounts = {};
-            let totalBoxes = 0;
-            for (const bt of STATE.boxTypes) {
-                const v = parseInt(document.getElementById('boxinput-' + bt.id)?.value) || 0;
-                boxCounts[bt.id] = v;
-                totalBoxes += v;
-            }
-            week.boxCounts = boxCounts;
-            save();
+            const totalBoxes = Object.values(boxCounts).reduce((a, b) => a + b, 0);
 
-            const activePlayers = STATE.players.filter(p => p.active);
-            if (!activePlayers.length) { alert('Нет активных участников'); return; }
-
-            // --- Step 1: global max per activity this week (for normalization) ---
+            // --- Step 1: global max per activity ---
             const globalMax = {};
             for (const act of ACTIVITIES) {
                 const scores = activePlayers.map(p => {
@@ -2247,10 +2677,14 @@
                 globalMax[act.key] = Math.max(...scores, 0.001);
             }
 
-            // --- Step 2: compute each player's per-activity weighted scores + overall final score ---
+            // --- Step 2: per-player scores ---
             const results = activePlayers.map(p => {
                 const entry = week.entries.find(e => e.playerId === p.id) || { scores: {}, participated: {}, managementBonus: 0 };
-                const roleMult = getRole(p.role).multiplier;
+                const role = boxTypes ? getRole(p.role) : getRole(p.role);
+                // Support custom role multipliers passed in settings (for simulator)
+                const roleMult = s.roleMultipliers
+                    ? (s.roleMultipliers[p.role] ?? getRole(p.role).multiplier)
+                    : getRole(p.role).multiplier;
 
                 const breakdown = {};
                 let activityTotal = 0;
@@ -2262,7 +2696,6 @@
                     activityTotal += weighted;
                 }
 
-                // Participation: score-based activities count if score > 0; manual checkbox for Иномир
                 const participatedCount = ACTIVITIES.filter(a => {
                     if (a.participationByScore) return (entry.scores[a.key] || 0) > 0;
                     if (a.hasParticipation) return !!entry.participated[a.key];
@@ -2286,7 +2719,7 @@
                 const deficitBonus = deficitRaw * s.deficitWeight;
                 let finalScore = Math.max(0, baseScore + deficitBonus);
 
-                // --- Step 2.5: apply penalty multipliers ---
+                // Step 2.5: penalties
                 let penaltyMult = 1.0;
                 const penaltyReasons = [];
                 const thresholds = s.thresholds || {};
@@ -2296,18 +2729,13 @@
                         const raw = entry.scores[act.key] || 0;
                         if (raw < t.minScore) {
                             penaltyMult *= t.penaltyMult;
-                            penaltyReasons.push({
-                                type: 'threshold', act: act.key, label: act.label,
-                                raw, minScore: t.minScore, mult: t.penaltyMult
-                            });
+                            penaltyReasons.push({ type: 'threshold', act: act.key, label: act.label, raw, minScore: t.minScore, mult: t.penaltyMult });
                         }
                     }
                 }
                 if (entry.gvgWarn && s.gvgWarnPenalty?.enabled) {
                     penaltyMult *= s.gvgWarnPenalty.penaltyMult;
-                    penaltyReasons.push({
-                        type: 'gvgWarn', mult: s.gvgWarnPenalty.penaltyMult
-                    });
+                    penaltyReasons.push({ type: 'gvgWarn', mult: s.gvgWarnPenalty.penaltyMult });
                 }
                 if (penaltyMult < 1.0) finalScore = Math.max(0, finalScore * penaltyMult);
 
@@ -2317,74 +2745,50 @@
                     participationBonus, participatedCount, mgmtBonus,
                     loyaltyMult, loyaltyBonus, baseScore,
                     deficitBonus, deficitRaw, cumDeserved, cumReceived,
-                    penaltyMult, penaltyReasons,
-                    finalScore
+                    penaltyMult, penaltyReasons, finalScore
                 };
             });
 
-            // --- Step 3: per box-type proportional allocation using blended score ---
-            // For a box type tied to activity X:
-            //   blendedScore = blend * activityWeightedScore(X) + (1-blend) * finalScore (normalized)
-            // For an unlinked box type:
-            //   blendedScore = finalScore
-            // This means support players don't get zero from KvM boxes — their
-            // global score (which already has role multiplier) acts as a floor.
-
+            // --- Step 3: per box-type blended allocation ---
             const blend = s.blendRatio ?? 0.7;
             const totalGlobalScore = results.reduce((s, r) => s + r.finalScore, 0);
+            const perTypeAllocs = {};
+            const usedBoxTypes = boxTypes || STATE.boxTypes;
 
-            // Allocate boxes per type, store result per player per type
-            const perTypeAllocs = {}; // btId -> array of { playerId, count }
-
-            for (const bt of STATE.boxTypes) {
-                if (!boxCounts[bt.id]) {
-                    perTypeAllocs[bt.id] = results.map(r => ({ playerId: r.playerId, count: 0 }));
-                    continue;
-                }
+            for (const bt of usedBoxTypes) {
+                if (!boxCounts[bt.id]) { perTypeAllocs[bt.id] = results.map(r => ({ playerId: r.playerId, count: 0 })); continue; }
                 const typeBoxes = boxCounts[bt.id];
-
-                // Compute each player's blended score for this box type
                 const scores = results.map(r => {
                     let score;
                     if (bt.activityKey) {
-                        // Activity-specific component: just the weighted score for that activity
-                        // (already includes role mult and activity weight)
                         const actScore = r.breakdown[bt.activityKey]?.weighted || 0;
-                        // Normalise global score to same scale as actScore by finding max actScore
                         const maxActScore = Math.max(...results.map(r2 => r2.breakdown[bt.activityKey]?.weighted || 0), 0.001);
                         const normGlobal = totalGlobalScore > 0 ? r.finalScore / totalGlobalScore : 0;
-                        // normActScore in [0..1], normGlobal in [0..1] — blend them
-                        const normAct = actScore / maxActScore;
-                        score = blend * normAct + (1 - blend) * normGlobal;
+                        score = blend * (actScore / maxActScore) + (1 - blend) * normGlobal;
                     } else {
-                        // No activity link — purely global score
                         score = totalGlobalScore > 0 ? r.finalScore / totalGlobalScore : 0;
                     }
                     return { playerId: r.playerId, score: Math.max(0, score) };
                 });
-
                 const totalTypeScore = scores.reduce((s, x) => s + x.score, 0);
                 const withAlloc = scores.map(x => {
                     const proportion = totalTypeScore > 0 ? x.score / totalTypeScore : 0;
                     const exact = proportion * typeBoxes;
                     return { playerId: x.playerId, proportion, exact, floor: Math.floor(exact), frac: exact % 1 };
                 });
-
-                // Distribute remainder to highest fractional parts
                 let allocated = withAlloc.reduce((s, a) => s + a.floor, 0);
                 let rem = typeBoxes - allocated;
                 withAlloc.sort((a, b) => b.frac - a.frac);
                 for (let i = 0; i < rem && i < withAlloc.length; i++) withAlloc[i].floor += 1;
-
-                perTypeAllocs[bt.id] = withAlloc.map(a => ({ playerId: a.playerId, count: a.floor, proportion: a.proportion }));
+                perTypeAllocs[bt.id] = withAlloc.map(a => ({ playerId: a.playerId, count: a.floor }));
             }
 
-            // --- Step 4: merge per-type allocations back onto player result objects ---
+            // --- Step 4: merge ---
             const allocs = results.map(r => {
                 const proportion = totalGlobalScore > 0 ? r.finalScore / totalGlobalScore : 0;
-                const boxBreakdown = {}; // btId -> count
+                const boxBreakdown = {};
                 let totalBoxesForPlayer = 0;
-                for (const bt of STATE.boxTypes) {
+                for (const bt of usedBoxTypes) {
                     const alloc = perTypeAllocs[bt.id]?.find(a => a.playerId === r.playerId);
                     boxBreakdown[bt.id] = alloc?.count || 0;
                     totalBoxesForPlayer += boxBreakdown[bt.id];
@@ -2393,6 +2797,23 @@
             });
 
             allocs.sort((a, b) => b.finalScore - a.finalScore);
+            return allocs;
+        }
+
+        function calculateDistribution() {
+            const week = STATE.weeks.find(w => w.id === STATE.currentWeekId) || STATE.weeks[STATE.weeks.length - 1];
+            if (!week) { alert('Нет данных недели'); return; }
+            if (!STATE.players.filter(p => p.active).length) { alert('Нет активных участников'); return; }
+
+            const boxCounts = {};
+            for (const bt of STATE.boxTypes) {
+                boxCounts[bt.id] = parseInt(document.getElementById('boxinput-' + bt.id)?.value) || 0;
+            }
+            const totalBoxes = Object.values(boxCounts).reduce((a, b) => a + b, 0);
+            week.boxCounts = boxCounts;
+            save();
+
+            const allocs = runDistributionAlgorithm(week, STATE.settings, boxCounts, STATE.players, STATE.boxTypes);
             renderResults(allocs, totalBoxes, week);
         }
 
@@ -2626,6 +3047,8 @@
         document.getElementById('playerModal').addEventListener('click', function (e) { if (e.target === this) closePlayerModal(); });
         document.getElementById('historyModal').addEventListener('click', function (e) { if (e.target === this) closeHistModal(); });
         document.getElementById('playerProfileModal').addEventListener('click', function (e) { if (e.target === this) closePlayerProfile(); });
+        document.getElementById('simulatorModal').addEventListener('click', function (e) { if (e.target === this) closeSimulator(); });
+        document.getElementById('csvImportModal').addEventListener('click', function (e) { if (e.target === this) closeCsvImport(); });
         document.getElementById('shareModal').addEventListener('click', function (e) { if (e.target === this) closeShareModal(); });
         document.getElementById('shareViewerModal').addEventListener('click', function (e) { if (e.target === this) closeShareViewer(); });
 
@@ -2940,18 +3363,58 @@ exact = доля × всего_коробок
             };
         }
 
+        function buildSharePayloadFromHistory(dist, totalBoxes, weekLabel) {
+            // Builds share payload from saved week.distribution (no breakdown available)
+            return {
+                v: 2,
+                guild: STATE.guild.name,
+                week: weekLabel,
+                date: new Date().toISOString().slice(0, 10),
+                totalBoxes,
+                boxTypes: STATE.boxTypes.map(bt => ({
+                    id: bt.id, name: bt.name, color: bt.color, activityKey: bt.activityKey || null
+                })),
+                rows: dist.map(d => {
+                    const role = getRole(d.role);
+                    // No breakdown in history — scores unavailable, use zeros
+                    const scores = ACTIVITIES.reduce((acc, a) => { acc[a.key] = 0; return acc; }, {});
+                    return {
+                        name: d.playerName,
+                        cls: '',
+                        role: role.name,
+                        roleColor: role.color,
+                        scores,
+                        finalScore: parseFloat((d.finalScore || 0).toFixed(4)),
+                        proportion: parseFloat((d.receivedProportion || 0).toFixed(6)),
+                        boxBreakdown: d.boxBreakdown || {},
+                        totalBoxes: d.boxes || 0
+                    };
+                })
+            };
+        }
+
         function shareDistribution() {
-            if (!window._lastAllocs || !window._lastAllocs.length) {
-                alert('Сначала рассчитайте распределение'); return;
-            }
-            const week = STATE.weeks.find(w => w.id === window._lastWeekId);
+            const week = STATE.weeks.find(w => w.id === window._lastWeekId)
+                || STATE.weeks.find(w => w.id === STATE.currentWeekId)
+                || STATE.weeks[STATE.weeks.length - 1];
             const weekLabel = week?.label || 'Неделя';
 
-            const payload = buildSharePayload(window._lastAllocs, window._lastTotalBoxes, weekLabel);
-            const json = JSON.stringify(payload);
-            const compressed = LZString.compressToEncodedURIComponent(json);
-            const url = `${location.href.split('#')[0]}#share=${compressed}`;
+            let payload;
 
+            // Use live _lastAllocs if they have breakdown (i.e. came from a fresh calculation)
+            const hasBreakdown = window._lastAllocs?.length && window._lastAllocs[0]?.breakdown;
+            if (hasBreakdown) {
+                payload = buildSharePayload(window._lastAllocs, window._lastTotalBoxes, weekLabel);
+            } else if (week?.distribution?.length) {
+                // Fall back to saved history
+                const totalBoxes = Object.values(week.boxCounts || {}).reduce((a, b) => a + b, 0);
+                payload = buildSharePayloadFromHistory(week.distribution, totalBoxes, weekLabel);
+            } else {
+                alert('Сначала рассчитайте или сохраните распределение'); return;
+            }
+
+            const compressed = LZString.compressToEncodedURIComponent(JSON.stringify(payload));
+            const url = `${location.href.split('#')[0]}#share=${compressed}`;
             document.getElementById('share-url-text').value = url;
             document.getElementById('shareModal').classList.add('open');
         }
@@ -3223,6 +3686,329 @@ exact = ${(r.proportion * 100).toFixed(2)}% × ${totalBoxes}
         }
 
         // ============================
+        // CSV IMPORT
+        // ============================
+
+        // Palette for auto-generating role colors for new roles from CSV
+        const ROLE_AUTO_COLORS = [
+            '#e07a52', '#c9a227', '#52c87a', '#c952e0', '#52e0d4',
+            '#e0c252', '#9252e0', '#e05299', '#52a0e0', '#e05252'
+        ];
+
+        let _csvRows = []; // parsed CSV rows, cached after file load
+
+        // Opens the modal, optionally jumping to a specific tab
+        function openCsvImport(tab) {
+            _csvRows = [];
+            document.getElementById('csv-upload-status').textContent = '';
+            document.getElementById('csv-players-content').style.display = 'none';
+            document.getElementById('csv-players-empty').style.display = 'block';
+            document.getElementById('csv-week-content').style.display = 'none';
+            document.getElementById('csv-week-empty').style.display = 'block';
+            document.getElementById('csv-file-input').value = '';
+            document.getElementById('csv-players-result').textContent = '';
+            document.getElementById('csv-week-result').textContent = '';
+            switchCsvTab(tab || 'upload');
+            document.getElementById('csvImportModal').classList.add('open');
+        }
+
+        function closeCsvImport() {
+            document.getElementById('csvImportModal').classList.remove('open');
+        }
+
+        function switchCsvTab(name) {
+            document.querySelectorAll('.csv-tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.csv-panel').forEach(p => p.classList.remove('active'));
+            document.getElementById('csvtab-btn-' + name).classList.add('active');
+            document.getElementById('csvtab-' + name).classList.add('active');
+        }
+
+        // ── File loading ──
+
+        function onCsvDrop(e) {
+            e.preventDefault();
+            document.getElementById('csv-drop-zone').classList.remove('drag-over');
+            const file = e.dataTransfer.files?.[0];
+            if (file) loadCsvFile(file);
+        }
+
+        function onCsvFileSelect(e) {
+            const file = e.target.files?.[0];
+            if (file) loadCsvFile(file);
+        }
+
+        function loadCsvFile(file) {
+            if (!file.name.endsWith('.csv') && file.type !== 'text/csv') {
+                document.getElementById('csv-upload-status').textContent = '⚠ Ожидается файл формата .csv';
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = e => {
+                try {
+                    _csvRows = parseCsv(e.target.result);
+                    const status = document.getElementById('csv-upload-status');
+                    status.textContent = `✓ Загружено ${_csvRows.length} строк из «${esc(file.name)}»`;
+                    status.style.color = 'var(--gold)';
+                    renderCsvPlayersPreview();
+                    renderCsvWeekPreview();
+                } catch (err) {
+                    document.getElementById('csv-upload-status').textContent = '✕ Ошибка парсинга: ' + err.message;
+                }
+            };
+            reader.readAsText(file, 'UTF-8');
+        }
+
+        // ── CSV Parser ──
+        // Handles quoted fields, comma-in-quotes, empty rows
+        function parseCsv(text) {
+            const lines = text.split(/\r?\n/);
+            if (lines.length < 2) throw new Error('Файл слишком короткий');
+
+            // Parse header row — normalize to lowercase trimmed keys
+            const headers = splitCsvLine(lines[0]).map(h => h.trim().toLowerCase());
+
+            const rows = [];
+            for (let i = 1; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (!line) continue;
+                const cells = splitCsvLine(line);
+                const row = {};
+                headers.forEach((h, idx) => { row[h] = (cells[idx] || '').trim(); });
+                // Skip rows with no nickname
+                if (!row['никнейм']) continue;
+                rows.push(row);
+            }
+            return rows;
+        }
+
+        function splitCsvLine(line) {
+            const result = [];
+            let cur = '', inQ = false;
+            for (let i = 0; i < line.length; i++) {
+                const ch = line[i];
+                if (ch === '"') { inQ = !inQ; continue; }
+                if (ch === ',' && !inQ) { result.push(cur); cur = ''; continue; }
+                cur += ch;
+            }
+            result.push(cur);
+            return result;
+        }
+
+        // Parses Russian date formats: dd.mm.yy or dd.mm.yyyy
+        function parseCsvDate(str) {
+            if (!str) return null;
+            const parts = str.trim().split('.');
+            if (parts.length !== 3) return null;
+            let [d, m, y] = parts.map(Number);
+            if (y < 100) y += 2000;
+            if (!d || !m || !y || m > 12 || d > 31) return null;
+            const date = new Date(y, m - 1, d);
+            return isNaN(date.getTime()) ? null : date.toISOString();
+        }
+
+        // ── Players preview ──
+
+        function renderCsvPlayersPreview() {
+            if (!_csvRows.length) return;
+            const skipExisting = document.getElementById('csv-skip-existing').checked;
+            const tbody = document.getElementById('csv-players-tbody');
+            const summary = document.getElementById('csv-players-summary');
+
+            let newCount = 0, existCount = 0;
+
+            tbody.innerHTML = _csvRows.map((row, idx) => {
+                const nick = row['никнейм'] || '';
+                const cls = row['класс'] || '';
+                const dateStr = row['дата вступления'] || '';
+                const dateISO = parseCsvDate(dateStr);
+
+                const existing = STATE.players.find(p => p.name.toLowerCase() === nick.toLowerCase());
+                const isNew = !existing;
+                if (isNew) newCount++; else existCount++;
+
+                if (!isNew && skipExisting) {
+                    return `<tr class="csv-row-skip">
+        <td><input type="checkbox" disabled></td>
+        <td style="color:var(--text-dim)">${esc(nick)}</td>
+        <td style="color:var(--text-dim)">${esc(cls)}</td>
+        <td style="color:var(--text-dim)">${dateStr || '—'}</td>
+        <td><span class="csv-badge-exists">уже есть</span></td>
+      </tr>`;
+                }
+
+                const rowCls = isNew ? 'csv-row-new' : 'csv-row-exists';
+                const badge = isNew
+                    ? '<span class="csv-badge-new">✚ новый</span>'
+                    : '<span class="csv-badge-exists">↺ существует</span>';
+
+                return `<tr class="${rowCls}">
+      <td><input type="checkbox" class="csv-player-chk" data-idx="${idx}" ${isNew ? 'checked' : ''}></td>
+      <td><b>${esc(nick)}</b></td>
+      <td>${esc(cls) || '—'}</td>
+      <td style="font-size:0.78rem;color:var(--text-dim)">${dateStr || '—'}</td>
+      <td>${badge}</td>
+    </tr>`;
+            }).join('');
+
+            summary.textContent = `${newCount} новых · ${existCount} уже в системе`;
+
+            document.getElementById('csv-players-empty').style.display = 'none';
+            document.getElementById('csv-players-content').style.display = 'block';
+        }
+
+        function applyCsvPlayers() {
+            const checked = [...document.querySelectorAll('.csv-player-chk:checked')];
+            if (!checked.length) { alert('Нет выбранных игроков'); return; }
+
+            let created = 0, skipped = 0;
+            const usedColors = STATE.roles.map(r => r.color);
+
+            for (const chk of checked) {
+                const idx = parseInt(chk.dataset.idx);
+                const row = _csvRows[idx];
+                if (!row) continue;
+
+                const nick = row['никнейм']?.trim();
+                const cls = row['класс']?.trim() || '';
+                const dateISO = parseCsvDate(row['дата вступления'] || '');
+
+                if (!nick) continue;
+
+                // Skip if already exists
+                if (STATE.players.find(p => p.name.toLowerCase() === nick.toLowerCase())) {
+                    skipped++; continue;
+                }
+
+                // Find or create role by class name
+                let role = cls
+                    ? STATE.roles.find(r => r.name.toLowerCase() === cls.toLowerCase())
+                    : null;
+
+                if (!role && cls) {
+                    // Pick a color not yet used, cycling through palette
+                    const usedSet = new Set(STATE.roles.map(r => r.color));
+                    const color = ROLE_AUTO_COLORS.find(c => !usedSet.has(c)) || ROLE_AUTO_COLORS[STATE.roles.length % ROLE_AUTO_COLORS.length];
+                    role = { id: 'role_' + genId(), name: cls, color, multiplier: 1.0 };
+                    STATE.roles.push(role);
+                }
+
+                STATE.players.push({
+                    id: genId(),
+                    name: nick,
+                    class: cls,
+                    role: role?.id || (STATE.roles[0]?.id || 'role_dps'),
+                    joinDate: dateISO || new Date().toISOString(),
+                    active: true
+                });
+                created++;
+            }
+
+            save();
+            const result = document.getElementById('csv-players-result');
+            result.textContent = `✓ Создано ${created} участников, пропущено ${skipped}`;
+            renderCsvPlayersPreview(); // refresh badges
+            renderPlayers();           // refresh players tab
+        }
+
+        // ── Week data preview ──
+
+        function renderCsvWeekPreview() {
+            if (!_csvRows.length) return;
+
+            const week = STATE.weeks.find(w => w.id === STATE.currentWeekId) || STATE.weeks[STATE.weeks.length - 1];
+            const noWeekEl = document.getElementById('csv-week-no-week');
+            noWeekEl.style.display = week ? 'none' : 'block';
+
+            const tbody = document.getElementById('csv-week-tbody');
+            const summary = document.getElementById('csv-week-summary');
+            let matched = 0, unmatched = 0;
+
+            tbody.innerHTML = _csvRows.map(row => {
+                const nick = row['никнейм'] || '';
+                const kvm = parseInt(row['kvm за неделю']) || 0;
+                const gvg = parseInt(row['gvg']) || 0;
+                const arcade = parseInt(row['баллы аркады']) || 0;
+                const orders = parseInt(row['контракты (7 дней)']) || 0;
+                const officer = (row['офицер'] || '').toLowerCase().trim() === 'да';
+
+                const player = STATE.players.find(p => p.name.toLowerCase() === nick.toLowerCase());
+                const found = !!player;
+                if (found) matched++; else unmatched++;
+
+                const statusBadge = found
+                    ? '<span class="csv-badge-new">✓ найден</span>'
+                    : '<span style="color:#e05252;font-size:0.7rem">✕ не найден</span>';
+
+                const officerBadge = officer
+                    ? '<span style="color:var(--gold);font-size:0.75rem">⭐ Да</span>'
+                    : '<span style="color:var(--text-dim);font-size:0.75rem">—</span>';
+
+                const rowCls = found ? 'csv-row-new' : '';
+                return `<tr class="${rowCls}">
+      <td>${found ? `<b>${esc(nick)}</b>` : `<span style="color:var(--text-dim)">${esc(nick)}</span>`}</td>
+      <td>${kvm || '—'}</td>
+      <td>${gvg || '—'}</td>
+      <td>${arcade || '—'}</td>
+      <td>${orders || '—'}</td>
+      <td>${officerBadge}</td>
+      <td>${statusBadge}</td>
+    </tr>`;
+            }).join('');
+
+            summary.textContent = `${matched} игроков найдено · ${unmatched} не найдено в системе`;
+
+            document.getElementById('csv-week-empty').style.display = 'none';
+            document.getElementById('csv-week-content').style.display = 'block';
+        }
+
+        function applyCsvWeek() {
+            const week = STATE.weeks.find(w => w.id === STATE.currentWeekId) || STATE.weeks[STATE.weeks.length - 1];
+            if (!week) { alert('Нет активной недели. Создайте неделю во вкладке «Неделя».'); return; }
+
+            const officerBonus = parseFloat(document.getElementById('csv-officer-bonus').value) || 0;
+            let applied = 0, skipped = 0;
+
+            for (const row of _csvRows) {
+                const nick = row['никнейм']?.trim();
+                if (!nick) continue;
+
+                const player = STATE.players.find(p => p.name.toLowerCase() === nick.toLowerCase());
+                if (!player) { skipped++; continue; }
+
+                let entry = week.entries.find(e => e.playerId === player.id);
+                if (!entry) {
+                    entry = { playerId: player.id, scores: {}, participated: {}, managementBonus: 0, gvgWarn: false };
+                    week.entries.push(entry);
+                }
+
+                const kvm = parseInt(row['kvm за неделю']) || 0;
+                const gvg = parseInt(row['gvg']) || 0;
+                const arcade = parseInt(row['баллы аркады']) || 0;
+                const orders = parseInt(row['контракты (7 дней)']) || 0;
+                const officer = (row['офицер'] || '').toLowerCase().trim() === 'да';
+
+                entry.scores.kvm = kvm;
+                entry.scores.gvg = gvg;
+                entry.scores.arcade = arcade;
+                entry.scores.orders = orders;
+                entry.scores.otherworld = entry.scores.otherworld || 0;
+                // Auto-participation by score
+                entry.participated.gvg = gvg > 0;
+                entry.participated.kvm = kvm > 0;
+                entry.participated.arcade = arcade > 0;
+                entry.managementBonus = officer ? officerBonus : 0;
+
+                applied++;
+            }
+
+            save();
+            const result = document.getElementById('csv-week-result');
+            result.textContent = `✓ Заполнено ${applied} записей, пропущено ${skipped}`;
+            // Refresh weekly tab if open
+            if (document.getElementById('tab-weekly').classList.contains('active')) renderWeeklyTab();
+        }
+
+        // ============================
         // EXPORT / IMPORT
         // ============================
         function exportState() {
@@ -3244,50 +4030,38 @@ exact = ${(r.proportion * 100).toFixed(2)}% × ${totalBoxes}
             reader.onload = e => {
                 try {
                     const parsed = JSON.parse(e.target.result);
-                    // Basic structure validation
                     if (!parsed || typeof parsed !== 'object' || !Array.isArray(parsed.players)) {
                         alert('Неверный формат файла. Ожидается файл экспорта Guild Box Distributor.');
                         return;
                     }
                     if (!confirm(`Загрузить данные гильдии «${parsed.guild?.name || '?'}»?\nТекущие данные будут заменены.`)) return;
 
-                    // Run through the same migration pipeline as load()
                     STATE = parsed;
-                    if (!STATE.boxTypes || !Array.isArray(STATE.boxTypes) || !STATE.boxTypes.length)
-                        STATE.boxTypes = DEFAULT_BOX_TYPES.map(b => ({ ...b }));
-                    if (STATE.settings.blendRatio === undefined) STATE.settings.blendRatio = 0.7;
-                    if (!STATE.roles || !Array.isArray(STATE.roles) || !STATE.roles.length) {
-                        const oldMult = STATE.settings?.roleMultipliers || {};
-                        STATE.roles = DEFAULT_ROLES.map(r => {
-                            const k = Object.keys(oldMult).find(k => k.toLowerCase() === r.name.toLowerCase());
-                            return { ...r, multiplier: k ? oldMult[k] : r.multiplier };
-                        });
+                    // Fill any new fields that may be missing from older exports
+                    if (!STATE.settings.thresholds) {
+                        STATE.settings.thresholds = {
+                            gvg: { enabled: false, minScore: 600, penaltyMult: 0.0 },
+                            kvm: { enabled: false, minScore: 25, penaltyMult: 0.0 },
+                            arcade: { enabled: false, minScore: 0, penaltyMult: 0.5 },
+                            otherworld: { enabled: false, minScore: 0, penaltyMult: 0.5 },
+                            orders: { enabled: false, minScore: 0, penaltyMult: 0.5 },
+                        };
                     }
-                    STATE.roles.forEach((r, i) => { if (!r.color) r.color = DEFAULT_ROLES[i % DEFAULT_ROLES.length].color; });
-                    if (STATE.settings?.roleMultipliers) delete STATE.settings.roleMultipliers;
-                    STATE.players.forEach(p => {
-                        if (p.role && !p.role.startsWith('role_')) {
-                            const match = STATE.roles.find(r => r.name === p.role || r.id === p.role);
-                            p.role = match ? match.id : (STATE.roles[0]?.id || 'role_dps');
-                        }
-                        if (!p.joinDate && p.weeks !== undefined) {
-                            p.joinDate = new Date(Date.now() - (p.weeks || 0) * 7 * 24 * 3600 * 1000).toISOString();
-                        }
-                    });
+                    if (!STATE.settings.gvgWarnPenalty) {
+                        STATE.settings.gvgWarnPenalty = { enabled: true, penaltyMult: 0.5 };
+                    }
 
                     save();
-                    // Refresh entire UI
                     loadSettingsUI();
                     registerHeaderTips();
                     document.getElementById('guildNameDisplay').textContent = STATE.guild.name;
                     renderPlayers();
-                    // Reset analytics chart state so it re-seeds on next open
                     _chartSelected.clear();
                     _chartInstance = null;
                 } catch (err) {
                     alert('Ошибка при чтении файла: ' + err.message);
                 } finally {
-                    event.target.value = ''; // reset file input so same file can be re-imported
+                    event.target.value = '';
                 }
             };
             reader.readAsText(file);
@@ -4084,6 +4858,274 @@ exact = ${(r.proportion * 100).toFixed(2)}% × ${totalBoxes}
       </div>`;
             }).join('')
                 }</div>`;
+        }
+
+        // ============================
+        // SIMULATOR
+        // ============================
+        let _simDebounce = null;
+
+        // Reads current sim control values into a settings-like object
+        function readSimSettings() {
+            const s = JSON.parse(JSON.stringify(STATE.settings)); // deep clone as base
+
+            // Activity weights
+            for (const a of ACTIVITIES) {
+                const el = document.getElementById(`sim-w-${a.key}`);
+                if (el) s.activityWeights[a.key] = parseFloat(el.value) ?? 0;
+            }
+            // Role multipliers — stored inline in settings for the algorithm
+            s.roleMultipliers = {};
+            for (const r of STATE.roles) {
+                const el = document.getElementById(`sim-role-${r.id}`);
+                if (el) s.roleMultipliers[r.id] = parseFloat(el.value) ?? 1;
+            }
+            // Other params — use ?? not || so that 0 is preserved as a valid value
+            const pf = document.getElementById('sim-participationFactor');
+            if (pf) s.participationFactor = parseFloat(pf.value) ?? 0;
+            const br = document.getElementById('sim-blendRatio');
+            if (br) s.blendRatio = parseFloat(br.value) ?? 0.7;
+
+            return s;
+        }
+
+        // Reads sim box counts
+        function readSimBoxCounts() {
+            const counts = {};
+            for (const bt of STATE.boxTypes) {
+                const el = document.getElementById(`sim-box-${bt.id}`);
+                counts[bt.id] = el ? (parseInt(el.value) || 0) : 0;
+            }
+            return counts;
+        }
+
+        function openSimulator() {
+            const week = STATE.weeks.find(w => w.id === STATE.currentWeekId) || STATE.weeks[STATE.weeks.length - 1];
+            if (!week) { alert('Сначала выберите неделю во вкладке «Неделя»'); return; }
+            if (!STATE.players.filter(p => p.active).length) { alert('Нет активных участников'); return; }
+
+            renderSimulatorControls(week);
+
+            // Use saved distribution as the delta baseline if available —
+            // this ensures deltas start at zero regardless of algorithm changes.
+            // Only recompute if no saved distribution exists yet.
+            if (week.distribution?.length) {
+                // Convert saved distribution entries to the alloc shape runSimulation expects
+                window._lastAllocs = week.distribution.map(d => ({
+                    playerId: d.playerId,
+                    playerName: d.playerName,
+                    role: d.role,
+                    proportion: d.receivedProportion || 0,
+                    totalBoxes: d.boxes,
+                    boxBreakdown: d.boxBreakdown || {},
+                    finalScore: d.finalScore || 0,
+                    penaltyMult: 1.0,
+                }));
+                window._lastTotalBoxes = week.distribution.reduce((s, d) => s + d.boxes, 0);
+            } else {
+                const baseCounts = week.boxCounts || {};
+                window._lastAllocs = runDistributionAlgorithm(week, STATE.settings, baseCounts, STATE.players, STATE.boxTypes);
+                window._lastTotalBoxes = Object.values(baseCounts).reduce((a, b) => a + b, 0);
+            }
+            window._lastWeekId = week.id;
+
+            document.getElementById('simulatorModal').classList.add('open');
+            runSimulation();
+        }
+
+        function renderSimulatorControls(week) {
+            const s = STATE.settings;
+
+            // Box counts — use week.boxCounts as source of truth (what was actually entered)
+            // Fall back to _lastWeekId box counts or zero
+            const savedBoxCounts = week.boxCounts || {};
+            document.getElementById('sim-box-inputs').innerHTML = STATE.boxTypes.map(bt => {
+                const val = savedBoxCounts[bt.id] ?? 0;
+                return `<div class="sim-control-row">
+      <label style="color:${bt.color}">${esc(bt.name)}</label>
+      <input type="number" id="sim-box-${bt.id}" value="${val}" min="0" step="1"
+             style="width:70px;padding:4px 6px" oninput="scheduleSimRun()">
+    </div>`;
+            }).join('');
+
+            // Activity weights
+            document.getElementById('sim-weight-inputs').innerHTML = ACTIVITIES.map(a => {
+                const val = s.activityWeights[a.key] ?? 1;
+                return `<div class="sim-control-row">
+      <label>${a.label}</label>
+      <input type="range" id="sim-w-${a.key}" min="0" max="5" step="0.1" value="${val}"
+             oninput="document.getElementById('sim-wv-${a.key}').textContent=parseFloat(this.value).toFixed(1);scheduleSimRun()">
+      <span class="sim-val" id="sim-wv-${a.key}">${parseFloat(val).toFixed(1)}</span>
+    </div>`;
+            }).join('');
+
+            // Role multipliers
+            document.getElementById('sim-role-inputs').innerHTML = STATE.roles.map(r => {
+                const val = r.multiplier ?? 1;
+                return `<div class="sim-control-row">
+      <label style="color:${r.color}">${esc(r.name)}</label>
+      <input type="range" id="sim-role-${r.id}" min="0.5" max="3" step="0.05" value="${val}"
+             oninput="document.getElementById('sim-rolev-${r.id}').textContent=parseFloat(this.value).toFixed(2);scheduleSimRun()">
+      <span class="sim-val" id="sim-rolev-${r.id}">×${parseFloat(val).toFixed(2)}</span>
+    </div>`;
+            }).join('');
+
+            // Other params
+            const pf = s.participationFactor ?? 0.25;
+            const br = s.blendRatio ?? 0.7;
+            document.getElementById('sim-other-inputs').innerHTML = `
+    <div class="sim-control-row">
+      <label>Участие</label>
+      <input type="range" id="sim-participationFactor" min="0" max="1" step="0.05" value="${pf}"
+             oninput="document.getElementById('sim-pfv').textContent=Math.round(parseFloat(this.value)*100)+'%';scheduleSimRun()">
+      <span class="sim-val" id="sim-pfv">${Math.round(pf * 100)}%</span>
+    </div>
+    <div class="sim-control-row">
+      <label>Blend</label>
+      <input type="range" id="sim-blendRatio" min="0" max="1" step="0.05" value="${br}"
+             oninput="document.getElementById('sim-brv').textContent=Math.round(parseFloat(this.value)*100)+'%';scheduleSimRun()">
+      <span class="sim-val" id="sim-brv">${Math.round(br * 100)}%</span>
+    </div>`;
+        }
+
+        function scheduleSimRun() {
+            clearTimeout(_simDebounce);
+            _simDebounce = setTimeout(runSimulation, 180);
+        }
+
+        function runSimulation() {
+            const week = STATE.weeks.find(w => w.id === STATE.currentWeekId) || STATE.weeks[STATE.weeks.length - 1];
+            if (!week) return;
+
+            const simSettings = readSimSettings();
+            const simBoxCounts = readSimBoxCounts();
+            const totalBoxes = Object.values(simBoxCounts).reduce((a, b) => a + b, 0);
+
+            const simAllocs = runDistributionAlgorithm(week, simSettings, simBoxCounts, STATE.players, STATE.boxTypes);
+
+            // Build lookup of real allocs for delta comparison
+            const realLookup = {};
+            if (window._lastAllocs) {
+                window._lastAllocs.forEach(a => { realLookup[a.playerId] = a; });
+            }
+
+            const status = document.getElementById('sim-status');
+            if (status) status.textContent = `Неделя: ${esc(week.label)} · Коробок: ${totalBoxes}`;
+
+            const container = document.getElementById('sim-results');
+            if (!container) return;
+
+            if (!simAllocs.length) {
+                container.innerHTML = '<div class="empty-state">Нет данных для симуляции.</div>';
+                return;
+            }
+
+            // Box type header columns
+            const btHeaders = STATE.boxTypes.map(bt =>
+                `<th style="color:${bt.color};font-size:0.75rem">📦 ${esc(bt.name)}</th>`
+            ).join('');
+
+            const rows = simAllocs.map((r, i) => {
+                const real = realLookup[r.playerId];
+                const role = getRole(r.role);
+                const roleStyle = `background:${role.color}28;color:${role.color};border:1px solid ${role.color}44;font-size:0.68rem`;
+
+                // Proportion delta
+                const realPct = real ? (real.proportion * 100) : null;
+                const simPct = r.proportion * 100;
+                const pctDiff = real !== undefined ? simPct - realPct : null;
+                const pctCls = pctDiff === null ? '' : pctDiff > 0.05 ? 'sim-delta-pos' : pctDiff < -0.05 ? 'sim-delta-neg' : 'sim-delta-neu';
+                const pctDelta = pctDiff === null ? '' : ` <span class="${pctCls}">${pctDiff > 0 ? '+' : ''}${pctDiff.toFixed(1)}%</span>`;
+
+                // Total boxes delta
+                const realBoxes = real?.totalBoxes ?? null;
+                const boxDiff = realBoxes !== null ? r.totalBoxes - realBoxes : null;
+                const boxCls = boxDiff === null ? '' : boxDiff > 0 ? 'sim-delta-pos' : boxDiff < 0 ? 'sim-delta-neg' : 'sim-delta-neu';
+                const boxDelta = boxDiff === null ? '' : ` <span class="${boxCls}">${boxDiff > 0 ? '+' : ''}${boxDiff}</span>`;
+
+                // Per-type breakdown cells
+                const btCells = STATE.boxTypes.map(bt => {
+                    const count = r.boxBreakdown?.[bt.id] ?? 0;
+                    const realCount = real?.boxBreakdown?.[bt.id] ?? null;
+                    const diff = realCount !== null ? count - realCount : null;
+                    const cls = diff === null ? '' : diff > 0 ? 'sim-delta-pos' : diff < 0 ? 'sim-delta-neg' : '';
+                    const deltaStr = diff === null ? '' : diff !== 0 ? ` <span class="${cls}">${diff > 0 ? '+' : ''}${diff}</span>` : '';
+                    return `<td style="color:${bt.color};font-family:'Cinzel',serif;font-size:0.85rem">${count}${deltaStr}</td>`;
+                }).join('');
+
+                const penaltyIcon = r.penaltyMult < 1.0 ? ` <span style="color:#e05252;font-size:0.7rem">⚠</span>` : '';
+
+                return `<tr>
+      <td style="color:var(--text-dim);font-size:0.8rem">${i + 1}</td>
+      <td>
+        <b style="font-size:0.88rem">${esc(r.playerName)}</b>
+        ${r.playerClass ? `<br><span style="font-size:0.72rem;color:var(--text-dim)">${esc(r.playerClass)}</span>` : ''}
+      </td>
+      <td><span class="role-badge" style="${roleStyle}">${esc(role.name)}</span></td>
+      <td style="color:var(--gold-light);font-weight:600;font-size:0.85rem">${r.finalScore.toFixed(3)}${penaltyIcon}</td>
+      <td style="color:var(--text-dim);font-size:0.85rem">${simPct.toFixed(1)}%${pctDelta}</td>
+      ${btCells}
+      <td style="background:rgba(201,162,39,0.08);font-family:'Cinzel',serif">${r.totalBoxes}${boxDelta}</td>
+    </tr>`;
+            }).join('');
+
+            container.innerHTML = `<table style="font-size:0.83rem">
+    <thead><tr>
+      <th>#</th><th>Игрок</th><th>Роль</th>
+      <th>Итого</th><th>Доля %</th>
+      ${btHeaders}
+      <th>📦 Всего</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table>
+  ${window._lastAllocs ? '<div style="margin-top:8px;font-size:0.75rem;color:var(--text-dim)">Цвет показывает отклонение от реального расчёта. Серый = без изменений.</div>' : ''}`;
+        }
+
+        function resetSimulator() {
+            const week = STATE.weeks.find(w => w.id === STATE.currentWeekId) || STATE.weeks[STATE.weeks.length - 1];
+            if (!week) return;
+            renderSimulatorControls(week);
+            // Restore the same baseline used on open
+            if (week.distribution?.length) {
+                window._lastAllocs = week.distribution.map(d => ({
+                    playerId: d.playerId,
+                    playerName: d.playerName,
+                    role: d.role,
+                    proportion: d.receivedProportion || 0,
+                    totalBoxes: d.boxes,
+                    boxBreakdown: d.boxBreakdown || {},
+                    finalScore: d.finalScore || 0,
+                    penaltyMult: 1.0,
+                }));
+                window._lastTotalBoxes = week.distribution.reduce((s, d) => s + d.boxes, 0);
+            } else {
+                const baseCounts = readSimBoxCounts();
+                window._lastAllocs = runDistributionAlgorithm(week, STATE.settings, baseCounts, STATE.players, STATE.boxTypes);
+                window._lastTotalBoxes = Object.values(baseCounts).reduce((a, b) => a + b, 0);
+            }
+            runSimulation();
+        }
+
+        function applySimulatorSettings() {
+            if (!confirm('Применить параметры симулятора как текущие настройки гильдии? Это перезапишет веса, ролевые множители и blend.')) return;
+            const simS = readSimSettings();
+            STATE.settings.activityWeights = simS.activityWeights;
+            STATE.settings.participationFactor = simS.participationFactor;
+            STATE.settings.blendRatio = simS.blendRatio;
+            // Apply role multipliers back to STATE.roles
+            if (simS.roleMultipliers) {
+                STATE.roles.forEach(r => {
+                    if (simS.roleMultipliers[r.id] !== undefined) r.multiplier = simS.roleMultipliers[r.id];
+                });
+            }
+            save();
+            loadSettingsUI();
+            closeSimulator();
+            alert('✓ Настройки применены');
+        }
+
+        function closeSimulator() {
+            document.getElementById('simulatorModal').classList.remove('open');
         }
 
         // ============================
