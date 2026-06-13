@@ -1,1 +1,1 @@
-Ragnarok X next gen Guild box calculator
+Ragnarok X next gen Guild box calculator: https://guild.sohje.com
